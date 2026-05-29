@@ -70,12 +70,11 @@ class PipelineOrchestrator:
         if stop_after == "received":
             return job
 
-        if not mock:
-            raise NotImplementedError(
-                "Only mock pipeline stages are implemented; pass --mock"
-            )
-
-        script = run_script_agent(job, payload, mock=True)
+        # --mock: fixture LLM + mock video. Without --mock: DeepSeek LLM + mock video (step 18 TBD).
+        llm_mock = mock
+        script = run_script_agent(
+            job, payload, mock=llm_mock, app_settings=self.settings
+        )
         self._update_state(
             job,
             status="scripted",
@@ -85,7 +84,9 @@ class PipelineOrchestrator:
         if stop_after == "scripted":
             return job
 
-        shots = run_storyboard_agent(job, script, mock=True)
+        shots = run_storyboard_agent(
+            job, script, mock=llm_mock, app_settings=self.settings
+        )
         self._update_state(
             job,
             status="storyboarded",

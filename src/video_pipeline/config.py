@@ -22,5 +22,10 @@ class Settings(BaseSettings):
     max_generation_retries: int = 2
     video_pipeline_mock: bool = True
 
+    deepseek_api_key: str = ""
+    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_model: str = "deepseek-chat"
+    anthropic_api_key: str = ""
+
 
 settings = Settings()

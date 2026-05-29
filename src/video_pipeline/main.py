@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--mock",
         action="store_true",
-        help="Run in mock mode (no paid external APIs)",
+        help="Use fixture script/shots and mock video (no DeepSeek calls)",
     )
     parser.add_argument(
         "--stop-after",
