@@ -1,0 +1,25 @@
+# Environment / 环境变量
+.env
+.env.local
+
+# Python / Python 缓存
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node / Node 缓存
+node_modules/
+dist/
+build/
+
+# Runtime artifacts / 运行产物
+storage/jobs/*
+!storage/jobs/.gitkeep
+*.log
+
+# macOS / macOS 系统文件
+.DS_Store
+

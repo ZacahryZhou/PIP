@@ -1,0 +1,26 @@
+[project]
+name = "multi-agent-video-pipeline"
+version = "0.1.0"
+description = "OpenClaw-driven multi-agent text-to-video pipeline MVP"
+requires-python = ">=3.11"
+dependencies = [
+  "aiohttp",
+  "anthropic",
+  "opencv-python",
+  "pydantic",
+  "pydantic-settings",
+  "structlog",
+  "tenacity"
+]
+
+[project.optional-dependencies]
+dev = [
+  "aioresponses",
+  "pytest",
+  "pytest-asyncio"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
