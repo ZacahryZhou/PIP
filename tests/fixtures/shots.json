@@ -1,0 +1,138 @@
+{
+  "shots": [
+    {
+      "shot_id": "shot_001",
+      "scene_id": "scene_001",
+      "duration_sec": 5,
+      "subject": "hero entering rainy neon alley",
+      "camera_move": "low handheld tracking from behind",
+      "action": "hero runs into frame and accelerates down the alley",
+      "mood": "tense",
+      "scene_type": "realistic",
+      "motion_intensity": "high",
+      "has_characters": true,
+      "character_ids": ["hero"],
+      "character_prompts": [
+        "hero: determined face, athletic build, dark practical jacket, worn boots"
+      ],
+      "style_tags": ["cinematic", "night", "rain", "neon"],
+      "dialogue": [],
+      "preferred_model": null,
+      "fallback_model": null
+    },
+    {
+      "shot_id": "shot_002",
+      "scene_id": "scene_001",
+      "duration_sec": 5,
+      "subject": "hero close pursuit through alley entrance",
+      "camera_move": "fast push-in",
+      "action": "hero glances back while sprinting past steam and puddles",
+      "mood": "tense",
+      "scene_type": "realistic",
+      "motion_intensity": "high",
+      "has_characters": true,
+      "character_ids": ["hero"],
+      "character_prompts": [
+        "hero: determined face, athletic build, dark practical jacket"
+      ],
+      "style_tags": ["cinematic", "night", "rain"],
+      "dialogue": [
+        {
+          "speaker": "hero",
+          "text": "Keep moving.",
+          "start_sec": 2.0,
+          "end_sec": 3.5
+        }
+      ],
+      "preferred_model": null,
+      "fallback_model": null
+    },
+    {
+      "shot_id": "shot_003",
+      "scene_id": "scene_002",
+      "duration_sec": 5,
+      "subject": "alley mid-section with hologram signs",
+      "camera_move": "lateral tracking shot",
+      "action": "hero sprints past flickering signs as drone lights sweep the walls",
+      "mood": "action",
+      "scene_type": "realistic",
+      "motion_intensity": "high",
+      "has_characters": true,
+      "character_ids": ["hero"],
+      "character_prompts": [
+        "hero: athletic build, dark practical jacket, alert movement"
+      ],
+      "style_tags": ["neon", "hologram", "chase"],
+      "dialogue": [],
+      "preferred_model": null,
+      "fallback_model": null
+    },
+    {
+      "shot_id": "shot_004",
+      "scene_id": "scene_002",
+      "duration_sec": 5,
+      "subject": "wide view of alley chase",
+      "camera_move": "wide establishing with slight crane",
+      "action": "hero weaves between obstacles while drones descend in the background",
+      "mood": "action",
+      "scene_type": "realistic",
+      "motion_intensity": "medium",
+      "has_characters": true,
+      "character_ids": ["hero"],
+      "character_prompts": [
+        "hero: dark practical jacket, fast precise movement"
+      ],
+      "style_tags": ["wide", "drones", "cyberpunk"],
+      "dialogue": [],
+      "preferred_model": null,
+      "fallback_model": null
+    },
+    {
+      "shot_id": "shot_005",
+      "scene_id": "scene_003",
+      "duration_sec": 5,
+      "subject": "dead end alley with steam vents",
+      "camera_move": "handheld follow then sudden stop",
+      "action": "hero slides to a stop, breathing hard, steam obscuring the frame",
+      "mood": "tense",
+      "scene_type": "realistic",
+      "motion_intensity": "medium",
+      "has_characters": true,
+      "character_ids": ["hero"],
+      "character_prompts": [
+        "hero: determined face, expressive eyes, dark practical jacket"
+      ],
+      "style_tags": ["steam", "dead-end", "dramatic"],
+      "dialogue": [],
+      "preferred_model": null,
+      "fallback_model": null
+    },
+    {
+      "shot_id": "shot_006",
+      "scene_id": "scene_003",
+      "duration_sec": 5,
+      "subject": "hero face and upward escape route",
+      "camera_move": "slow push-in then whip pan up",
+      "action": "hero looks up toward a fire escape as rain streaks through neon light",
+      "mood": "tense",
+      "scene_type": "realistic",
+      "motion_intensity": "low",
+      "has_characters": true,
+      "character_ids": ["hero"],
+      "character_prompts": [
+        "hero: determined face, emotionally restrained, neon rim light"
+      ],
+      "style_tags": ["close-up", "neon", "ending"],
+      "dialogue": [
+        {
+          "speaker": "hero",
+          "text": "Now or never.",
+          "start_sec": 1.0,
+          "end_sec": 2.5
+        }
+      ],
+      "preferred_model": null,
+      "fallback_model": null
+    }
+  ]
+}

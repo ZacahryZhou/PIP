@@ -1,0 +1,59 @@
+{
+  "narrative_arc": "setup -> chase -> reveal -> ending",
+  "visual_style": "cinematic cyberpunk realism",
+  "color_tone": "neon blue and magenta against wet asphalt",
+  "music_mood": "tense electronic",
+  "music_bpm": 128,
+  "camera_language": "handheld tracking with fast push-ins and wide establishing shots",
+  "characters_in_use": ["hero"],
+  "total_duration_sec": 30,
+  "scene_list": [
+    {
+      "scene_id": "scene_001",
+      "duration_sec": 10,
+      "location": "rainy neon alley entrance",
+      "time_of_day": "night",
+      "characters": ["hero"],
+      "action_summary": "hero bursts into the alley and starts running",
+      "dialogue": [
+        {
+          "speaker": "hero",
+          "text": "Keep moving.",
+          "start_sec": 2.0,
+          "end_sec": 3.5
+        }
+      ],
+      "mood": "tense",
+      "camera_notes": "low handheld tracking from behind"
+    },
+    {
+      "scene_id": "scene_002",
+      "duration_sec": 10,
+      "location": "narrow alley with flickering hologram signs",
+      "time_of_day": "night",
+      "characters": ["hero"],
+      "action_summary": "hero sprints past signs while drones close in",
+      "dialogue": [],
+      "mood": "action",
+      "camera_notes": "fast lateral tracking with lens flare"
+    },
+    {
+      "scene_id": "scene_003",
+      "duration_sec": 10,
+      "location": "alley dead end with steam vents",
+      "time_of_day": "night",
+      "characters": ["hero"],
+      "action_summary": "hero slides to a stop and looks up at the escape route",
+      "dialogue": [
+        {
+          "speaker": "hero",
+          "text": "Now or never.",
+          "start_sec": 7.0,
+          "end_sec": 8.5
+        }
+      ],
+      "mood": "tense",
+      "camera_notes": "slow push-in to face, then whip pan upward"
+    }
+  ]
+}
