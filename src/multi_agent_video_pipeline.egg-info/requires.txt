@@ -1,0 +1,12 @@
+aiohttp
+anthropic
+opencv-python
+pydantic
+pydantic-settings
+structlog
+tenacity
+
+[dev]
+aioresponses
+pytest
+pytest-asyncio

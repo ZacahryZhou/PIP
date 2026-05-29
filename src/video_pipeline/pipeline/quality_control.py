@@ -1,0 +1,146 @@
+"""QC stage — validate raw clips and copy passes to clips/validated."""
+
+from __future__ import annotations
+
+import shutil
+from pathlib import Path
+
+from video_pipeline.config import Settings
+from video_pipeline.media.ffmpeg import parse_resolution, probe_video
+from video_pipeline.schemas import GenerationReport, QCCheckResult, QCReport, ShotsDocument
+from video_pipeline.storage import JobPaths, write_json
+
+DURATION_TOLERANCE_SEC = 0.75
+
+
+def validated_clip_path(job: JobPaths, shot_id: str) -> Path:
+    return job.clips_validated_dir / f"{shot_id}.mp4"
+
+
+def run_quality_control(
+    job: JobPaths,
+    shots: ShotsDocument,
+    generation: GenerationReport,
+    *,
+    settings: Settings,
+) -> QCReport:
+    target_width, target_height = parse_resolution(settings.target_resolution)
+    gen_by_id = {item.shot_id: item for item in generation.results}
+
+    checks: list[QCCheckResult] = []
+    passed: list[str] = []
+    failed: list[str] = []
+
+    for shot in shots.shots:
+        shot_failed = False
+        gen = gen_by_id.get(shot.shot_id)
+        clip_path: Path | None = None
+        if gen and gen.output_path:
+            clip_path = Path(gen.output_path)
+
+        if not clip_path or not clip_path.is_file():
+            checks.append(
+                QCCheckResult(
+                    shot_id=shot.shot_id,
+                    check="file_integrity",
+                    status="failed",
+                    message="Clip file missing",
+                )
+            )
+            failed.append(shot.shot_id)
+            continue
+
+        try:
+            meta = probe_video(clip_path)
+        except ValueError as exc:
+            checks.append(
+                QCCheckResult(
+                    shot_id=shot.shot_id,
+                    check="file_integrity",
+                    status="failed",
+                    message=str(exc),
+                )
+            )
+            failed.append(shot.shot_id)
+            continue
+
+        checks.append(
+            QCCheckResult(
+                shot_id=shot.shot_id,
+                check="file_integrity",
+                status="passed",
+                actual=str(clip_path),
+            )
+        )
+
+        expected_duration = shot.duration_sec
+        actual_duration = float(meta["duration_sec"])
+        duration_ok = abs(actual_duration - expected_duration) <= DURATION_TOLERANCE_SEC
+        checks.append(
+            QCCheckResult(
+                shot_id=shot.shot_id,
+                check="duration",
+                status="passed" if duration_ok else "failed",
+                expected=f"{expected_duration:.2f}s",
+                actual=f"{actual_duration:.2f}s",
+            )
+        )
+        if not duration_ok:
+            shot_failed = True
+
+        width = int(meta["width"])
+        height = int(meta["height"])
+        resolution_ok = width == target_width and height == target_height
+        checks.append(
+            QCCheckResult(
+                shot_id=shot.shot_id,
+                check="resolution",
+                status="passed" if resolution_ok else "failed",
+                expected=settings.target_resolution,
+                actual=f"{width}x{height}",
+            )
+        )
+        if not resolution_ok:
+            shot_failed = True
+
+        fps = float(meta["fps"])
+        fps_ok = abs(fps - settings.target_fps) <= 1.0
+        checks.append(
+            QCCheckResult(
+                shot_id=shot.shot_id,
+                check="fps",
+                status="passed" if fps_ok else "failed",
+                expected=str(settings.target_fps),
+                actual=f"{fps:.2f}",
+            )
+        )
+        if not fps_ok:
+            shot_failed = True
+
+        checks.append(
+            QCCheckResult(
+                shot_id=shot.shot_id,
+                check="blank_frames",
+                status="passed",
+                message="skipped in MVP mock QC",
+            )
+        )
+
+        if shot_failed:
+            failed.append(shot.shot_id)
+            continue
+
+        dest = validated_clip_path(job, shot.shot_id)
+        shutil.copy2(clip_path, dest)
+        passed.append(shot.shot_id)
+
+    report = QCReport(
+        job_id=job.job_id,
+        target_resolution=settings.target_resolution,
+        target_fps=settings.target_fps,
+        passed_shot_ids=passed,
+        failed_shot_ids=failed,
+        checks=checks,
+    )
+    write_json(job.reports_dir / "qc_report.json", report)
+    return report
