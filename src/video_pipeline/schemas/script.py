@@ -30,6 +30,8 @@ class Scene(BaseModel):
     dialogue: list[DialogueLine] = Field(default_factory=list)
     mood: MoodType
     camera_notes: str = Field(min_length=1)
+    emotional_beat: str = Field(min_length=1)
+    director_notes: str = Field(min_length=1)
 
 
 class ScriptPlan(BaseModel):

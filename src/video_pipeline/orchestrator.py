@@ -12,7 +12,7 @@ from video_pipeline.agents import (
     run_storyboard_agent,
 )
 from video_pipeline.config import Settings, settings
-from video_pipeline.pipeline import run_generation, run_postproduction, run_quality_control
+from video_pipeline.pipeline import run_generation, run_keyframe_generation, run_postproduction, run_quality_control
 from video_pipeline.schemas import GatewayPayload, JobState
 from video_pipeline.storage import (
     JobPaths,
@@ -30,6 +30,7 @@ STOP_AFTER_CHOICES = frozenset(
         "scripted",
         "storyboarded",
         "routed",
+        "keyframes",
         "generated",
         "validated",
         "assembled",
@@ -70,7 +71,7 @@ class PipelineOrchestrator:
         if stop_after == "received":
             return job
 
-        # --mock: fixture LLM + mock video. Without --mock: DeepSeek LLM + mock video (step 18 TBD).
+        # --mock: fixture LLM + mock media. Without --mock: DeepSeek LLM + fal media.
         llm_mock = mock
         script = run_script_agent(
             job, payload, mock=llm_mock, app_settings=self.settings
@@ -110,12 +111,40 @@ class PipelineOrchestrator:
         if stop_after == "routed" or not routing.should_continue:
             return job
 
+        self._update_state(job, status="keyframes_started", current_stage="keyframes_started")
+        keyframes = run_keyframe_generation(
+            job, script, shots, routing, settings=self.settings, mock=mock
+        )
+        failed_keyframes = [item.shot_id for item in keyframes.results if item.status == "failed"]
+        if failed_keyframes:
+            self._update_state(
+                job,
+                status="failed_keyframes",
+                current_stage="keyframes",
+                error_message=f"Failed keyframes: {', '.join(failed_keyframes)}",
+                artifact_paths={
+                    "keyframe_report": str(job.reports_dir / "keyframe_report.json"),
+                },
+            )
+            return job
+
+        self._update_state(
+            job,
+            status="keyframes",
+            current_stage="keyframes",
+            artifact_paths={
+                "keyframe_report": str(job.reports_dir / "keyframe_report.json"),
+            },
+        )
+        if stop_after == "keyframes":
+            return job
+
         self._update_state(
             job,
             status="generation_started",
             current_stage="generation_started",
         )
-        generation = run_generation(job, shots, routing, settings=self.settings)
+        generation = run_generation(job, script, shots, routing, settings=self.settings, mock=mock)
         if generation.failed_shot_ids:
             self._update_state(
                 job,

@@ -2,14 +2,17 @@
 
 from pydantic import BaseModel, Field, model_validator
 
-from video_pipeline.schemas.storyboard import VideoModelName
+from video_pipeline.schemas.storyboard import GenerationMode, VideoModelName
 
 
 class RouteDecision(BaseModel):
     shot_id: str = Field(pattern=r"^shot_\d{3}$")
     preferred_model: VideoModelName
     fallback_model: VideoModelName
+    generation_mode: GenerationMode
+    generation_mode_reason: str = Field(min_length=1)
     routing_reason: str = Field(min_length=1)
+    estimated_keyframe_cost: float = Field(ge=0, default=0)
     estimated_cost_per_shot: float = Field(ge=0)
     estimated_duration_sec: float = Field(gt=0)
 

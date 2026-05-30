@@ -5,18 +5,25 @@
       "scene_id": "scene_001",
       "duration_sec": 5,
       "subject": "hero entering rainy neon alley",
+      "shot_size": "WS",
+      "camera_angle": "low angle from behind",
       "camera_move": "low handheld tracking from behind",
       "action": "hero runs into frame and accelerates down the alley",
+      "facial_expression": "jaw set, eyes forward, breath visible in cold air",
+      "character_gaze": "forward down the alley",
+      "blocking": "hero enters lower left, alley lines lead depth toward center",
       "mood": "tense",
       "scene_type": "realistic",
       "motion_intensity": "high",
       "has_characters": true,
       "character_ids": ["hero"],
       "character_prompts": [
-        "hero: determined face, athletic build, dark practical jacket, worn boots"
+        "hero: determined face, athletic build, dark practical jacket, worn boots, tense jaw"
       ],
       "style_tags": ["cinematic", "night", "rain", "neon"],
       "dialogue": [],
+      "generation_mode": "t2v",
+      "generation_mode_reason": "high motion wide tracking chase suits text-to-video",
       "preferred_model": null,
       "fallback_model": null
     },
@@ -25,15 +32,20 @@
       "scene_id": "scene_001",
       "duration_sec": 5,
       "subject": "hero close pursuit through alley entrance",
+      "shot_size": "CU",
+      "camera_angle": "eye level, three-quarter profile",
       "camera_move": "fast push-in",
       "action": "hero glances back while sprinting past steam and puddles",
+      "facial_expression": "eyes wide, brow furrowed, mouth tight on exertion",
+      "character_gaze": "quick glance backward then forward again",
+      "blocking": "face fills right third, steam crosses foreground",
       "mood": "tense",
       "scene_type": "realistic",
       "motion_intensity": "high",
       "has_characters": true,
       "character_ids": ["hero"],
       "character_prompts": [
-        "hero: determined face, athletic build, dark practical jacket"
+        "hero: determined face, athletic build, dark practical jacket, strained expression"
       ],
       "style_tags": ["cinematic", "night", "rain"],
       "dialogue": [
@@ -44,6 +56,8 @@
           "end_sec": 3.5
         }
       ],
+      "generation_mode": "i2v",
+      "generation_mode_reason": "CU dialogue close-up needs stable face via keyframe",
       "preferred_model": null,
       "fallback_model": null
     },
@@ -52,18 +66,25 @@
       "scene_id": "scene_002",
       "duration_sec": 5,
       "subject": "alley mid-section with hologram signs",
+      "shot_size": "MS",
+      "camera_angle": "eye level, lateral",
       "camera_move": "lateral tracking shot",
       "action": "hero sprints past flickering signs as drone lights sweep the walls",
+      "facial_expression": "focused stare, sweat on temple, lips parted on hard breath",
+      "character_gaze": "forward-left toward exit path",
+      "blocking": "hero crosses frame left to right, holograms flare behind",
       "mood": "action",
       "scene_type": "realistic",
       "motion_intensity": "high",
       "has_characters": true,
       "character_ids": ["hero"],
       "character_prompts": [
-        "hero: athletic build, dark practical jacket, alert movement"
+        "hero: athletic build, dark practical jacket, alert movement, intense eyes"
       ],
       "style_tags": ["neon", "hologram", "chase"],
       "dialogue": [],
+      "generation_mode": "t2v",
+      "generation_mode_reason": "high motion lateral chase suits text-to-video",
       "preferred_model": null,
       "fallback_model": null
     },
@@ -72,18 +93,25 @@
       "scene_id": "scene_002",
       "duration_sec": 5,
       "subject": "wide view of alley chase",
+      "shot_size": "EWS",
+      "camera_angle": "high angle crane",
       "camera_move": "wide establishing with slight crane",
       "action": "hero weaves between obstacles while drones descend in the background",
+      "facial_expression": "small figure but upright urgent posture",
+      "character_gaze": "toward far end of alley",
+      "blocking": "hero mid-ground center, drones top background, obstacles frame path",
       "mood": "action",
       "scene_type": "realistic",
       "motion_intensity": "medium",
       "has_characters": true,
       "character_ids": ["hero"],
       "character_prompts": [
-        "hero: dark practical jacket, fast precise movement"
+        "hero: dark practical jacket, fast precise movement, silhouette readable"
       ],
       "style_tags": ["wide", "drones", "cyberpunk"],
       "dialogue": [],
+      "generation_mode": "t2v",
+      "generation_mode_reason": "EWS establishing with medium motion suits text-to-video",
       "preferred_model": null,
       "fallback_model": null
     },
@@ -92,18 +120,25 @@
       "scene_id": "scene_003",
       "duration_sec": 5,
       "subject": "dead end alley with steam vents",
+      "shot_size": "MS",
+      "camera_angle": "eye level, frontal",
       "camera_move": "handheld follow then sudden stop",
       "action": "hero slides to a stop, breathing hard, steam obscuring the frame",
+      "facial_expression": "chest heaving, eyes darting, rain on face",
+      "character_gaze": "scans left and right for escape",
+      "blocking": "hero center frame, steam rises from vents at knees",
       "mood": "tense",
       "scene_type": "realistic",
       "motion_intensity": "medium",
       "has_characters": true,
       "character_ids": ["hero"],
       "character_prompts": [
-        "hero: determined face, expressive eyes, dark practical jacket"
+        "hero: determined face, expressive eyes, dark practical jacket, breath visible"
       ],
       "style_tags": ["steam", "dead-end", "dramatic"],
       "dialogue": [],
+      "generation_mode": "i2v",
+      "generation_mode_reason": "MS performance beat with readable face expression",
       "preferred_model": null,
       "fallback_model": null
     },
@@ -112,15 +147,20 @@
       "scene_id": "scene_003",
       "duration_sec": 5,
       "subject": "hero face and upward escape route",
+      "shot_size": "MCU",
+      "camera_angle": "low angle looking up at hero",
       "camera_move": "slow push-in then whip pan up",
       "action": "hero looks up toward a fire escape as rain streaks through neon light",
+      "facial_expression": "eyes lift with resolve, slight nod, jaw relaxes into decision",
+      "character_gaze": "upward toward fire escape",
+      "blocking": "face lower frame, fire escape lines upper frame after whip pan",
       "mood": "tense",
       "scene_type": "realistic",
       "motion_intensity": "low",
       "has_characters": true,
       "character_ids": ["hero"],
       "character_prompts": [
-        "hero: determined face, emotionally restrained, neon rim light"
+        "hero: determined face, emotionally restrained, neon rim light on cheek"
       ],
       "style_tags": ["close-up", "neon", "ending"],
       "dialogue": [
@@ -131,6 +171,8 @@
           "end_sec": 2.5
         }
       ],
+      "generation_mode": "i2v",
+      "generation_mode_reason": "MCU dialogue ending with low motion suits keyframe control",
       "preferred_model": null,
       "fallback_model": null
     }

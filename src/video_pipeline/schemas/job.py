@@ -11,6 +11,8 @@ JobStatus = Literal[
     "scripted",
     "storyboarded",
     "routed",
+    "keyframes_started",
+    "keyframes",
     "generation_started",
     "generated",
     "qc_started",
@@ -18,6 +20,7 @@ JobStatus = Literal[
     "assembled",
     "delivered",
     "failed_validation",
+    "failed_keyframes",
     "failed_generation",
     "failed_qc",
     "failed_postproduction",
@@ -31,6 +34,8 @@ class JobStage(str, Enum):
     SCRIPTED = "scripted"
     STORYBOARDED = "storyboarded"
     ROUTED = "routed"
+    KEYFRAMES_STARTED = "keyframes_started"
+    KEYFRAMES = "keyframes"
     GENERATION_STARTED = "generation_started"
     GENERATED = "generated"
     QC_STARTED = "qc_started"

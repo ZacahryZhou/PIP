@@ -22,6 +22,7 @@ def test_ensure_job_layout_creates_subdirs(tmp_path: Path) -> None:
         "script",
         "storyboard",
         "routing",
+        "keyframes",
         "clips/raw",
         "clips/validated",
         "reports",

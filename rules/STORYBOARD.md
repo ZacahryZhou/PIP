@@ -24,15 +24,45 @@ Each shot must include:
 - `shot_id`
 - `duration_sec`
 - `subject`
+- `shot_size`: one of `EWS`, `WS`, `MLS`, `MS`, `MCU`, `CU`, `ECU`
+- `shot_size`：景别，取 `EWS`、`WS`、`MLS`、`MS`、`MCU`、`CU`、`ECU` 之一
+- `camera_angle`: e.g. eye level, low angle, high angle, over-shoulder
+- `camera_angle`：机位，如平视、仰拍、俯拍、过肩
 - `camera_move`
 - `action`
+- `facial_expression`: visible face/body expression when a character is present
+- `facial_expression`：有角色时必须写可见表情（眉、眼、嘴、呼吸等）
+- `character_gaze`: where the character looks (forward, off-screen left, upward, etc.)
+- `character_gaze`：角色视线方向
+- `blocking`: character position and movement in the frame
+- `blocking`：角色在画面中的位置与走位
 - `mood`
 - `scene_type`
 - `motion_intensity`
 - `has_characters`
 - `character_prompts`
+- `generation_mode`: `t2v` or `i2v` — you decide per shot (see below)
+- `generation_mode`：`t2v` 或 `i2v` — 由你按镜头判断（见下）
+- `generation_mode_reason`: one English sentence explaining the choice
+- `generation_mode_reason`：一句英文说明为何选该模式
 - `preferred_model`
 - `fallback_model`
+
+## Generation Mode / 生成模式（Storyboard Agent 判断）
+
+You must choose **`t2v`** (text-to-video) or **`i2v`** (keyframe image then image-to-video):
+
+必须为每个镜头选择 **`t2v`**（文生视频）或 **`i2v`**（关键帧图再图生视频）：
+
+| Choose `i2v` | Choose `t2v` |
+|---|---|
+| CU / MCU / MS with visible character performance | `motion_intensity=high` chase, sprint, large movement |
+| Shots with dialogue close-ups | EWS / WS establishing, environment-first |
+| `motion_intensity` low or medium + face matters | Complex travel / whip pan / drone sweep |
+
+Read `KEYFRAME.md` for i2v pipeline details.
+
+i2v 流程细节见 `KEYFRAME.md`。
 
 ## Important Boundary / 重要边界
 
@@ -58,8 +88,13 @@ The Storyboard Agent must return strict JSON:
       "scene_id": "scene_001",
       "duration_sec": 4,
       "subject": "hero running through rainy neon alley",
+      "shot_size": "WS",
+      "camera_angle": "low angle from behind",
       "camera_move": "low handheld tracking shot",
       "action": "hero sprints past flickering signs and looks back",
+      "facial_expression": "jaw clenched, eyes wide scanning for escape",
+      "character_gaze": "forward with quick glance backward",
+      "blocking": "hero enters frame left, dominates lower third, neon behind",
       "mood": "tense",
       "scene_type": "realistic",
       "motion_intensity": "high",
@@ -68,6 +103,8 @@ The Storyboard Agent must return strict JSON:
       "character_prompts": ["hero: determined face, athletic build, dark practical jacket"],
       "style_tags": ["cinematic", "night", "rain", "neon"],
       "dialogue": [],
+      "generation_mode": "t2v",
+      "generation_mode_reason": "high motion wide shot suits text-to-video",
       "preferred_model": null,
       "fallback_model": null
     }
@@ -109,6 +146,8 @@ The Storyboard Agent must return strict JSON:
 - 每个 `character_id` 都必须从 `CHARACTERS.md` 解析出视觉描述。
 - Character prompts must emphasize visible identity, clothing, movement style, and negative prompt.
 - 角色 prompt 必须强调可见身份、服装、动作风格和 negative prompt。
-- If a shot contains no character, `has_characters=false`, `character_ids=[]`, and `character_prompts=[]`.
-- 如果镜头没有角色，则 `has_characters=false`、`character_ids=[]`、`character_prompts=[]`。
+- If a shot contains no character, `has_characters=false`, `character_ids=[]`, `character_prompts=[]`, and set `facial_expression`, `character_gaze`, `blocking` to `"n/a"`.
+- 如果镜头没有角色，则 `has_characters=false`，且 `facial_expression`、`character_gaze`、`blocking` 填 `"n/a"`。
+- Within each scene, prefer at least two different `shot_size` values when the scene is longer than 5 seconds.
+- 同一场景超过 5 秒时，尽量至少使用两种不同 `shot_size`。
 

@@ -1,5 +1,6 @@
 aiohttp
 anthropic
+fal-client
 opencv-python
 pydantic
 pydantic-settings

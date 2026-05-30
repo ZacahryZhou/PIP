@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
   "aiohttp",
   "anthropic",
+  "fal-client",
   "opencv-python",
   "pydantic",
   "pydantic-settings",

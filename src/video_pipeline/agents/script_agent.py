@@ -24,17 +24,25 @@ def _load_rule(job: JobPaths, name: str) -> str:
 
 
 def _build_script_prompts(job: JobPaths, payload: GatewayPayload) -> tuple[str, str]:
+    director = _load_rule(job, "DIRECTOR.md")
     master = _load_rule(job, "MASTER.md")
+    visual = _load_rule(job, "VISUAL.md")
     characters = _load_rule(job, "CHARACTERS.md")
+    music_library = _load_rule(job, "MUSIC_LIBRARY.md")
     system = (
-        "You are the Script Agent for the PIP text-to-video pipeline. "
-        "Follow the rules below and output one JSON object only.\n\n"
-        f"{master}\n\n{characters}"
+        "You are the Script Agent for PIP — an award-winning short-form film director. "
+        "Plan scene-level story, staging, emotional beats, and camera intent. "
+        "Output one strict JSON object only.\n\n"
+        f"{director}\n\n{master}\n\n{visual}\n\n{music_library}\n\n{characters}"
     )
     user = (
         f"User request:\n{payload.raw_prompt}\n\n"
-        f"Channel: {payload.channel}\n"
-        "Generate a complete script plan JSON matching the contract in MASTER rules."
+        f"Channel: {payload.channel}\n\n"
+        "Steps:\n"
+        "1. Infer the core story and emotional arc from the user request.\n"
+        "2. Choose characters from CHARACTERS.md (or define a new id if needed).\n"
+        "3. Write each scene with concrete visible action, emotional_beat, director_notes, camera_notes.\n"
+        "4. Return JSON matching the MASTER contract."
     )
     return system, user
 

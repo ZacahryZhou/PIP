@@ -44,3 +44,44 @@ def generate_mock_clip(
 
     writer.release()
     return output_path
+
+
+def generate_mock_keyframe(
+    output_path: Path,
+    *,
+    width: int,
+    height: int,
+    label: str = "",
+) -> Path:
+    import cv2
+    import numpy as np
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    frame = np.zeros((height, width, 3), dtype=np.uint8)
+    frame[:, :, 0] = 60
+    frame[:, :, 1] = 90
+    frame[:, :, 2] = 140
+    if label:
+        cv2.putText(
+            frame,
+            label[:32],
+            (40, height // 2),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.0,
+            (255, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            frame,
+            "KEYFRAME",
+            (40, height // 2 + 40),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (200, 220, 255),
+            2,
+            cv2.LINE_AA,
+        )
+    if not cv2.imwrite(str(output_path), frame):
+        raise RuntimeError(f"Failed to write keyframe image {output_path}")
+    return output_path

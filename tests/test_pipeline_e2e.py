@@ -17,7 +17,11 @@ def test_mock_pipeline_produces_final_video(tmp_path: Path) -> None:
     assert job.final_dir.joinpath("final.mp4").is_file()
     assert job.final_dir.joinpath("assembled_video.mp4").is_file()
     assert (job.reports_dir / "generation_report.json").is_file()
+    assert (job.reports_dir / "keyframe_report.json").is_file()
     assert (job.reports_dir / "qc_report.json").is_file()
+
+    keyframes = list(job.keyframes_dir.glob("*.png"))
+    assert len(keyframes) == 3
 
     raw_clips = list(job.clips_raw_dir.glob("*.mp4"))
     validated_clips = list(job.clips_validated_dir.glob("*.mp4"))

@@ -47,7 +47,7 @@ def test_routing_plan_fixture_valid() -> None:
     routing = RoutingPlan.model_validate(load_json("routing.json"))
     assert routing.should_continue is True
     assert len(routing.routes) == 6
-    assert routing.total_estimated_cost == pytest.approx(2.45)
+    assert routing.total_estimated_cost == pytest.approx(3.15)
 
 
 def test_shots_duration_matches_script_fixture() -> None:

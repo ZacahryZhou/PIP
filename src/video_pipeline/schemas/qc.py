@@ -10,6 +10,7 @@ CheckName = Literal[
     "fps",
     "blank_frames",
     "file_integrity",
+    "normalize",
 ]
 CheckStatus = Literal["passed", "failed"]
 

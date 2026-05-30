@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from video_pipeline.schemas.storyboard import VideoModelName
+from video_pipeline.schemas.storyboard import GenerationMode, VideoModelName
 
 GenerationStatus = Literal["success", "failed", "skipped"]
 AttemptOutcome = Literal["success", "failed"]
@@ -23,7 +23,9 @@ class GenerationAttempt(BaseModel):
 class ShotGenerationResult(BaseModel):
     shot_id: str = Field(pattern=r"^shot_\d{3}$")
     status: GenerationStatus
+    generation_mode: GenerationMode | None = None
     selected_model: VideoModelName | None = None
+    keyframe_path: str | None = None
     output_path: str | None = None
     attempts: list[GenerationAttempt] = Field(default_factory=list)
 

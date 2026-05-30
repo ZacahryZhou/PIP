@@ -24,7 +24,9 @@
         }
       ],
       "mood": "tense",
-      "camera_notes": "low handheld tracking from behind"
+      "camera_notes": "low handheld tracking from behind, then quick push-in on face",
+      "emotional_beat": "sudden danger — hero commits to the chase",
+      "director_notes": "open on wide alley depth, keep neon reflections on wet ground, hero enters frame left"
     },
     {
       "scene_id": "scene_002",
@@ -35,7 +37,9 @@
       "action_summary": "hero sprints past signs while drones close in",
       "dialogue": [],
       "mood": "action",
-      "camera_notes": "fast lateral tracking with lens flare"
+      "camera_notes": "fast lateral tracking with lens flare from holograms",
+      "emotional_beat": "escalation — pressure tightens, no time to stop",
+      "director_notes": "layer foreground steam, midground hero, background drone lights sweeping walls"
     },
     {
       "scene_id": "scene_003",
@@ -53,7 +57,9 @@
         }
       ],
       "mood": "tense",
-      "camera_notes": "slow push-in to face, then whip pan upward"
+      "camera_notes": "slow push-in to face, then whip pan upward to fire escape",
+      "emotional_beat": "decision point — fear becomes resolve",
+      "director_notes": "steam obscures lower frame; end on upward hope via fire escape silhouette"
     }
   ]
 }

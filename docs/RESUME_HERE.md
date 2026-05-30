@@ -1,6 +1,6 @@
 # PIP 续开发备忘（回来先看这个）
 
-> 保存时间：2026-05-28  
+> 保存时间：2026-05-29（DeepSeek 16–17 已完成；项目路径 Desktop/PIP）
 > 仓库路径：`/Users/yixinzhou/Desktop/PIP`（已从 `multi-agent-video-pipeline` 迁到桌面）  
 > GitHub：`https://github.com/ZacahryZhou/PIP.git`
 
@@ -39,7 +39,8 @@ python -m video_pipeline.main \
 open storage/jobs/$(ls -t storage/jobs | grep '^job_' | head -1)/final/final.mp4
 ```
 
-若 `.venv` 不存在：`python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"`
+若 `.venv` 不存在或报 `bad interpreter`（搬家后常见）：  
+`rm -rf .venv && python3 -m venv .venv && pip install -e ".[dev]"`
 
 ---
 
@@ -62,20 +63,16 @@ DEEPSEEK_API_KEY=sk-你的key
 
 ## 四、接下来的开发任务（按顺序）
 
-主清单见：`docs/PIP_DEVELOPMENT_FLOW.md`（步骤 16 起）
+主清单见：`docs/PIP_DEVELOPMENT_FLOW.md`（步骤 16 起）  
+**成本与省钱策略见：`docs/COST_AND_OPTIMIZATION.md`（含 2026-05-30 真实跑片 $3.73 拆解）**
 
-| 步骤 | 任务 | 说明 |
-|------|------|------|
-| ~~16~~ | 真剧本 Agent | ✅ DeepSeek（`script_agent.py`） |
-| ~~17~~ | 真分镜 Agent | ✅ DeepSeek（`storyboard_agent.py`） |
-| **18** | 真视频 API | `providers/kling.py` 或 `seedance.py`，替换 mock 生成 |
-| **19** | Telegram | OpenClaw 网关 + `delivery.py`，手机收视频 |
-| 20 | 加固（可选） | 重试、预算、错误提示 |
+| 步骤 16–17 DeepSeek 剧本/分镜 | ✅ |
+| 步骤 18 fal 真视频 + keyframe | ✅ 已跑通（`job_20260530_010101`，~$3.17 画面 COGS） |
+| 步骤 18b TTS + BGM + 字幕混音 | ⏳ **下一步（完整 MVP）** |
+| 步骤 19 Telegram 收发 | ⏳ |
+| 步骤 20 加固（断点恢复、降本） | ⏳ 可选 |
 
-**与用户约定：**
-
-- 先接 **DeepSeek** 做 16–17 测试；视频生成仍可用 `--mock`。
-- 不要大改架构；跟 `PIP_DEVELOPMENT_FLOW.md` 走，少动无关文件。
+**用户待办（接步骤 18 前）：** 在本地 `.env` 填 `KLING_API_KEY` 或 `SEEDANCE_API_KEY`（不要发给 AI）。告诉 Cursor「已填 Kling/Seedance，接步骤 18」。
 
 ---
 

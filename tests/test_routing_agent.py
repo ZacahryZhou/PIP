@@ -44,3 +44,12 @@ def test_build_routing_plan_over_budget() -> None:
     plan = build_routing_plan(shots, max_job_cost_usd=0.5)
     assert plan.should_continue is False
     assert plan.budget_message is not None
+
+
+def test_routing_plan_includes_generation_mode() -> None:
+    shots = load_shots()
+    plan = build_routing_plan(shots, max_job_cost_usd=5.0)
+    i2v_routes = [route for route in plan.routes if route.generation_mode == "i2v"]
+    assert len(i2v_routes) == 3
+    assert all(route.estimated_keyframe_cost == 0.15 for route in i2v_routes)
+    assert plan.total_estimated_cost == 3.15

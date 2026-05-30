@@ -16,6 +16,8 @@ COST_PER_SECOND: dict[VideoModelName, float] = {
     "mock": 0.0,
 }
 
+KEYFRAME_COST_USD = 0.15
+
 
 def route_shot(shot: Shot) -> tuple[VideoModelName, VideoModelName, str]:
     """Apply ROUTING.md priority: first matching rule wins."""
@@ -57,13 +59,18 @@ def build_routing_plan(
     routes: list[RouteDecision] = []
     for shot in shots.shots:
         preferred, fallback, reason = route_shot(shot)
+        keyframe_cost = KEYFRAME_COST_USD if shot.generation_mode == "i2v" else 0.0
+        video_cost = estimate_shot_cost(preferred, shot.duration_sec)
         routes.append(
             RouteDecision(
                 shot_id=shot.shot_id,
                 preferred_model=preferred,
                 fallback_model=fallback,
+                generation_mode=shot.generation_mode,
+                generation_mode_reason=shot.generation_mode_reason,
                 routing_reason=reason,
-                estimated_cost_per_shot=estimate_shot_cost(preferred, shot.duration_sec),
+                estimated_keyframe_cost=keyframe_cost,
+                estimated_cost_per_shot=round(video_cost + keyframe_cost, 4),
                 estimated_duration_sec=shot.duration_sec,
             )
         )

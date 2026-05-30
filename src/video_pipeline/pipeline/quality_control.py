@@ -6,7 +6,12 @@ import shutil
 from pathlib import Path
 
 from video_pipeline.config import Settings
-from video_pipeline.media.ffmpeg import parse_resolution, probe_video
+from video_pipeline.media.ffmpeg import (
+    clip_needs_normalize,
+    normalize_clip,
+    parse_resolution,
+    probe_video,
+)
 from video_pipeline.schemas import GenerationReport, QCCheckResult, QCReport, ShotsDocument
 from video_pipeline.storage import JobPaths, write_json
 
@@ -63,6 +68,47 @@ def run_quality_control(
             )
             failed.append(shot.shot_id)
             continue
+
+        if clip_needs_normalize(
+            meta,
+            width=target_width,
+            height=target_height,
+            fps=settings.target_fps,
+            duration_sec=shot.duration_sec,
+            duration_tolerance_sec=DURATION_TOLERANCE_SEC,
+        ):
+            normalized_path = job.clips_validated_dir / f"{shot.shot_id}_normalized.mp4"
+            try:
+                normalize_clip(
+                    clip_path,
+                    normalized_path,
+                    width=target_width,
+                    height=target_height,
+                    fps=settings.target_fps,
+                    duration_sec=shot.duration_sec,
+                )
+            except Exception as exc:  # noqa: BLE001
+                checks.append(
+                    QCCheckResult(
+                        shot_id=shot.shot_id,
+                        check="normalize",
+                        status="failed",
+                        message=str(exc),
+                    )
+                )
+                failed.append(shot.shot_id)
+                continue
+
+            checks.append(
+                QCCheckResult(
+                    shot_id=shot.shot_id,
+                    check="normalize",
+                    status="passed",
+                    actual=str(normalized_path),
+                )
+            )
+            clip_path = normalized_path
+            meta = probe_video(clip_path)
 
         checks.append(
             QCCheckResult(

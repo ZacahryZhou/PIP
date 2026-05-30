@@ -13,6 +13,7 @@ JOB_SUBDIRS = (
     "script",
     "storyboard",
     "routing",
+    "keyframes",
     "clips/raw",
     "clips/validated",
     "reports",
@@ -44,6 +45,10 @@ class JobPaths:
     @property
     def routing_dir(self) -> Path:
         return self.root / "routing"
+
+    @property
+    def keyframes_dir(self) -> Path:
+        return self.root / "keyframes"
 
     @property
     def clips_raw_dir(self) -> Path:

@@ -11,9 +11,11 @@
 | 规划 + 规则文档 | ✅ 完成 |
 | JSON 契约 + 测试（Phase A） | ✅ 完成 |
 | 能跑整条流水线（mock） | ✅ 完成 |
-| 能出真视频 | ❌ 还没做 |
+| 能出真视频（画面无声） | ✅ Step 18 已跑通（~$3.2/30s COGS） |
+| 能出完整成片（配音+BGM+字幕） | ❌ Step 18b |
+| Telegram 回传 | ❌ Step 19 |
 
-**下一步：步骤 16–17 已接 DeepSeek；可做步骤 18（真视频 API）。**
+**下一步：Step 18b（音频后期）或 Step 19（Telegram）。成本与省钱见 `docs/COST_AND_OPTIMIZATION.md`。**
 
 ---
 
@@ -24,6 +26,7 @@
 | 文件 | 作用 | 要不要常看 |
 |------|------|------------|
 | **PIP_DEVELOPMENT_FLOW.md** | **开发步骤清单（本文件）** | ✅ 只看这个 |
+| **COST_AND_OPTIMIZATION.md** | **成本拆解、省钱工作流、商业化 COGS 预期** | 接 fal 后必读 |
 | ARCHITECTURE.md | 架构为什么这样设计 | 不懂再看 |
 | PROJECT_STRUCTURE.md | 代码将来放哪个文件夹 | 写代码时看 |
 | DEVELOPMENT_TASKS.md | 超细任务表（备用） | 可不看 |
@@ -305,9 +308,19 @@ source .venv/bin/activate
 # 测试 JSON（现在就能用）
 pytest tests/test_schemas.py -v
 
-# 跑完整 mock 流水线（里程碑 1）
-python -m video_pipeline.main --payload tests/fixtures/gateway_payload.json --mock
-# 成片：storage/jobs/job_<时间戳>/final/final.mp4
+# 仅测 DeepSeek 剧本（会消耗少量 API 额度）
+python -m video_pipeline.main \
+  --payload tests/fixtures/gateway_payload.json \
+  --stop-after scripted
+
+# 全流程：DeepSeek 剧本+分镜 + mock 视频（不加 --mock）
+python -m video_pipeline.main \
+  --payload tests/fixtures/gateway_payload.json
+
+# 完全免费 mock（fixture + 占位视频）
+python -m video_pipeline.main \
+  --payload tests/fixtures/gateway_payload.json \
+  --mock
 ```
 
 ---

@@ -41,6 +41,140 @@ def probe_video(path: Path) -> dict[str, float | int]:
     }
 
 
+def normalize_clip(
+    input_path: Path,
+    output_path: Path,
+    *,
+    width: int,
+    height: int,
+    fps: int,
+    duration_sec: float,
+) -> Path:
+    """Scale, pad, retime, and mute a provider clip to pipeline target specs."""
+    ffmpeg = _ffmpeg_path()
+    if ffmpeg:
+        return _normalize_with_ffmpeg(
+            ffmpeg,
+            input_path,
+            output_path,
+            width=width,
+            height=height,
+            fps=fps,
+            duration_sec=duration_sec,
+        )
+    return _normalize_with_opencv(
+        input_path,
+        output_path,
+        width=width,
+        height=height,
+        fps=fps,
+        duration_sec=duration_sec,
+    )
+
+
+def _normalize_with_ffmpeg(
+    ffmpeg: str,
+    input_path: Path,
+    output_path: Path,
+    *,
+    width: int,
+    height: int,
+    fps: int,
+    duration_sec: float,
+) -> Path:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    vf = (
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2:black,"
+        f"fps={fps}"
+    )
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-i",
+                str(input_path),
+                "-an",
+                "-vf",
+                vf,
+                "-t",
+                f"{duration_sec:.3f}",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        stderr = exc.stderr or ""
+        raise RuntimeError(f"FFmpeg normalize failed: {stderr}") from exc
+
+    return output_path
+
+
+def _normalize_with_opencv(
+    input_path: Path,
+    output_path: Path,
+    *,
+    width: int,
+    height: int,
+    fps: int,
+    duration_sec: float,
+) -> Path:
+    import cv2
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    capture = cv2.VideoCapture(str(input_path))
+    if not capture.isOpened():
+        raise ValueError(f"Cannot open video: {input_path}")
+
+    frame_total = max(1, int(round(duration_sec * fps)))
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(str(output_path), fourcc, float(fps), (width, height))
+    if not writer.isOpened():
+        capture.release()
+        raise RuntimeError(f"Failed to open VideoWriter for {output_path}")
+
+    written = 0
+    last_frame = None
+    while written < frame_total:
+        ok, frame = capture.read()
+        if not ok:
+            if last_frame is None:
+                break
+            frame = last_frame
+        else:
+            last_frame = cv2.resize(frame, (width, height))
+        writer.write(last_frame)
+        written += 1
+
+    capture.release()
+    writer.release()
+    if written == 0:
+        raise RuntimeError(f"Failed to normalize clip: {input_path}")
+    return output_path
+
+
+def clip_needs_normalize(
+    meta: dict[str, float | int],
+    *,
+    width: int,
+    height: int,
+    fps: int,
+    duration_sec: float,
+    duration_tolerance_sec: float,
+) -> bool:
+    resolution_ok = int(meta["width"]) == width and int(meta["height"]) == height
+    fps_ok = abs(float(meta["fps"]) - fps) <= 1.0
+    duration_ok = abs(float(meta["duration_sec"]) - duration_sec) <= duration_tolerance_sec
+    return not (resolution_ok and fps_ok and duration_ok)
+
+
 def concat_videos(inputs: list[Path], output: Path) -> Path:
     if not inputs:
         raise ValueError("concat_videos requires at least one input")

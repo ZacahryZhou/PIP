@@ -12,11 +12,18 @@ from pydantic import BaseModel
 from video_pipeline.schemas import GatewayPayload, JobState
 
 RULE_FILES = (
+    "DIRECTOR.md",
     "MASTER.md",
     "CHARACTERS.md",
+    "VISUAL.md",
     "STORYBOARD.md",
     "ROUTING.md",
+    "KEYFRAME.md",
+    "AUDIO.md",
+    "MUSIC_LIBRARY.md",
+    "SUBTITLE.md",
     "POSTPROD.md",
+    "PROVIDERS.md",
 )
 
 
