@@ -4,8 +4,8 @@ import pytest
 
 from video_pipeline.config import Settings
 from video_pipeline.providers.fal_utils import first_url
-from video_pipeline.providers.fal_video import select_fal_video_endpoint
-from video_pipeline.schemas import RouteDecision
+from video_pipeline.providers.fal_video import build_fal_video_arguments, select_fal_video_endpoint
+from video_pipeline.schemas import RouteDecision, Shot
 
 
 def route(preferred_model: str, generation_mode: str) -> RouteDecision:
@@ -47,3 +47,54 @@ def test_first_url_prefers_media_extension_in_nested_response() -> None:
     }
 
     assert first_url(payload, preferred_exts=(".mp4",)) == "https://cdn.example.com/result.mp4"
+
+
+def _sample_shot() -> Shot:
+    return Shot.model_validate(
+        {
+            "shot_id": "shot_001",
+            "scene_id": "scene_001",
+            "duration_sec": 4.0,
+            "subject": "hero in alley",
+            "shot_size": "MS",
+            "camera_angle": "eye level",
+            "camera_move": "slow push-in",
+            "action": "looks over shoulder",
+            "facial_expression": "alert",
+            "character_gaze": "off-screen left",
+            "blocking": "center frame",
+            "mood": "tense",
+            "scene_type": "realistic",
+            "motion_intensity": "medium",
+            "has_characters": True,
+            "character_ids": ["hero"],
+            "character_prompts": ["hero: athletic build"],
+            "generation_mode": "t2v",
+            "generation_mode_reason": "establishing motion",
+        }
+    )
+
+
+def test_build_fal_video_arguments_seedance_includes_1080p() -> None:
+    settings = Settings(fal_video_resolution="1080p")
+    args = build_fal_video_arguments(
+        settings=settings,
+        route=route("seedance", "t2v"),
+        shot=_sample_shot(),
+        prompt="test prompt",
+        endpoint="fal-ai/bytedance/seedance/v1.5/pro/text-to-video",
+    )
+    assert args["resolution"] == "1080p"
+    assert args["aspect_ratio"] == "16:9"
+
+
+def test_build_fal_video_arguments_kling_omits_resolution_param() -> None:
+    settings = Settings(fal_video_resolution="1080p")
+    args = build_fal_video_arguments(
+        settings=settings,
+        route=route("kling", "t2v"),
+        shot=_sample_shot(),
+        prompt="test prompt",
+        endpoint="fal-ai/kling-video/v3/pro/text-to-video",
+    )
+    assert "resolution" not in args

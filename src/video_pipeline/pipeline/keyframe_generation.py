@@ -59,6 +59,8 @@ def run_keyframe_generation(
                     api_key=settings.fal_key,
                     model=settings.fal_image_model,
                     prompt=prompt,
+                    width=width,
+                    height=height,
                 )
                 provider_request_id = result.provider_request_id
             results.append(

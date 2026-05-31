@@ -17,6 +17,7 @@ JOB_SUBDIRS = (
     "clips/raw",
     "clips/validated",
     "reports",
+    "audio",
     "final",
 )
 

@@ -27,7 +27,7 @@ class QCCheckResult(BaseModel):
 class QCReport(BaseModel):
     job_id: str = Field(min_length=1)
     target_resolution: str = Field(default="1920x1080")
-    target_fps: int = Field(default=24, ge=1)
+    target_fps: int = Field(default=30, ge=1)
     passed_shot_ids: list[str] = Field(default_factory=list)
     failed_shot_ids: list[str] = Field(default_factory=list)
     checks: list[QCCheckResult] = Field(default_factory=list)

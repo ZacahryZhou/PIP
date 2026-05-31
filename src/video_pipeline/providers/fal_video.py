@@ -50,6 +50,32 @@ def select_fal_video_endpoint(route: RouteDecision, settings: Settings) -> str:
     return endpoint
 
 
+def build_fal_video_arguments(
+    *,
+    settings: Settings,
+    route: RouteDecision,
+    shot: Shot,
+    prompt: str,
+    endpoint: str,
+    image_url: str | None = None,
+) -> dict[str, object]:
+    """Build fal subscribe payload; Seedance gets explicit resolution, Kling Pro via endpoint."""
+    duration = max(1, math.ceil(shot.duration_sec))
+    arguments: dict[str, object] = {
+        "prompt": prompt,
+        "duration": str(duration),
+        "aspect_ratio": "16:9",
+        "generate_audio": settings.fal_video_generate_audio,
+    }
+    if "seedance" in endpoint:
+        arguments["resolution"] = settings.fal_video_resolution
+    if route.generation_mode == "i2v":
+        if not image_url:
+            raise ValueError("image_url is required for i2v fal generation")
+        arguments["image_url"] = image_url
+    return arguments
+
+
 def generate_fal_clip(
     output_path: Path,
     *,
@@ -62,18 +88,20 @@ def generate_fal_clip(
     """Generate one video clip with fal and save it to the raw clips directory."""
     fal_client = require_fal_client(settings.fal_key)
     endpoint = select_fal_video_endpoint(route, settings)
-    duration = max(1, math.ceil(shot.duration_sec))
-    arguments: dict[str, object] = {
-        "prompt": prompt,
-        "duration": str(duration),
-        "aspect_ratio": "16:9",
-        "generate_audio": settings.fal_video_generate_audio,
-    }
-
+    image_url: str | None = None
     if route.generation_mode == "i2v":
         if not keyframe_path:
             raise ValueError("keyframe_path is required for i2v fal generation")
-        arguments["image_url"] = fal_client.upload_file(keyframe_path)
+        image_url = fal_client.upload_file(keyframe_path)
+
+    arguments = build_fal_video_arguments(
+        settings=settings,
+        route=route,
+        shot=shot,
+        prompt=prompt,
+        endpoint=endpoint,
+        image_url=image_url,
+    )
 
     result = fal_client.subscribe(endpoint, arguments=arguments, with_logs=True)
     video_url = first_url(result, preferred_exts=(".mp4", ".mov", ".webm", ".m4v"))

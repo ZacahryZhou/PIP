@@ -15,8 +15,55 @@ def parse_resolution(resolution: str) -> tuple[int, int]:
     return int(width_str), int(height_str)
 
 
+_FFMPEG_FULL_PATHS = (
+    "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg",
+    "/usr/local/opt/ffmpeg-full/bin/ffmpeg",
+)
+
+
+def _ffmpeg_candidates() -> list[str]:
+    seen: set[str] = set()
+    candidates: list[str] = []
+    for path in (*_FFMPEG_FULL_PATHS, shutil.which("ffmpeg")):
+        if not path or path in seen:
+            continue
+        if Path(path).is_file():
+            seen.add(path)
+            candidates.append(path)
+    return candidates
+
+
 def _ffmpeg_path() -> str | None:
-    return shutil.which("ffmpeg")
+    candidates = _ffmpeg_candidates()
+    return candidates[0] if candidates else None
+
+
+def _ffmpeg_supports_subtitle_burn(ffmpeg: str | None = None) -> bool:
+    """Return True when ffmpeg was built with libass (subtitles/ass filters)."""
+    paths = [ffmpeg] if ffmpeg else _ffmpeg_candidates()
+    for path in paths:
+        if not path:
+            continue
+        try:
+            result = subprocess.run(
+                [path, "-filters"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError:
+            continue
+        output = result.stdout + result.stderr
+        if " subtitles " in output or " ass " in output:
+            return True
+    return False
+
+
+def _ffmpeg_for_subtitle_burn() -> str | None:
+    for path in _ffmpeg_candidates():
+        if _ffmpeg_supports_subtitle_burn(path):
+            return path
+    return None
 
 
 def probe_video(path: Path) -> dict[str, float | int]:
@@ -219,6 +266,346 @@ def _concat_with_ffmpeg(ffmpeg: str, inputs: list[Path], output: Path) -> Path:
         list_path.unlink(missing_ok=True)
 
     return output
+
+
+def probe_has_audio(path: Path) -> bool:
+    ffprobe = shutil.which("ffprobe")
+    if not ffprobe:
+        return False
+    try:
+        result = subprocess.run(
+            [
+                ffprobe,
+                "-v",
+                "error",
+                "-select_streams",
+                "a",
+                "-show_entries",
+                "stream=codec_type",
+                "-of",
+                "csv=p=0",
+                str(path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError:
+        return False
+    return "audio" in result.stdout
+
+
+def generate_silent_wav(output_path: Path, *, duration_sec: float, sample_rate: int = 44100) -> Path:
+    ffmpeg = _ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for audio generation")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                f"anullsrc=r={sample_rate}:cl=stereo",
+                "-t",
+                f"{duration_sec:.3f}",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"FFmpeg silent audio failed: {exc.stderr or ''}") from exc
+    return output_path
+
+
+def generate_tone_wav(
+    output_path: Path,
+    *,
+    duration_sec: float,
+    frequency_hz: int = 220,
+    sample_rate: int = 44100,
+) -> Path:
+    ffmpeg = _ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for audio generation")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                f"sine=frequency={frequency_hz}:sample_rate={sample_rate}",
+                "-t",
+                f"{duration_sec:.3f}",
+                "-af",
+                "volume=0.08",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"FFmpeg tone audio failed: {exc.stderr or ''}") from exc
+    return output_path
+
+
+def trim_or_loop_audio(input_path: Path, output_path: Path, *, duration_sec: float) -> Path:
+    ffmpeg = _ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for audio trimming")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-stream_loop",
+                "-1",
+                "-i",
+                str(input_path),
+                "-t",
+                f"{duration_sec:.3f}",
+                "-c:a",
+                "pcm_s16le",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"FFmpeg trim/loop audio failed: {exc.stderr or ''}") from exc
+    return output_path
+
+
+def convert_audio_to_wav(input_path: Path, output_path: Path) -> Path:
+    ffmpeg = _ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for audio conversion")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-i",
+                str(input_path),
+                "-ac",
+                "2",
+                "-ar",
+                "44100",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"FFmpeg audio convert failed: {exc.stderr or ''}") from exc
+    return output_path
+
+
+def build_vo_track(
+    segments: list[tuple[Path, float]],
+    output_path: Path,
+    *,
+    total_duration_sec: float,
+) -> Path | None:
+    if not segments:
+        return None
+
+    ffmpeg = _ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for VO mixing")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    inputs: list[str] = []
+    filter_parts: list[str] = []
+    for index, (segment_path, start_sec) in enumerate(segments):
+        inputs.extend(["-i", str(segment_path)])
+        delay_ms = max(0, int(round(start_sec * 1000)))
+        filter_parts.append(f"[{index}:a]adelay={delay_ms}|{delay_ms}[vo{index}]")
+
+    mix_inputs = "".join(f"[vo{index}]" for index in range(len(segments)))
+    filter_parts.append(
+        f"{mix_inputs}amix=inputs={len(segments)}:duration=longest:dropout_transition=0[vo_mix]"
+    )
+    filter_parts.append(f"[vo_mix]apad=whole_dur={total_duration_sec:.3f}[vo_out]")
+    filter_complex = ";".join(filter_parts)
+
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                *inputs,
+                "-filter_complex",
+                filter_complex,
+                "-map",
+                "[vo_out]",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"FFmpeg VO track failed: {exc.stderr or ''}") from exc
+    return output_path
+
+
+def mix_bgm_and_vo(
+    bgm_path: Path,
+    vo_path: Path | None,
+    output_path: Path,
+    *,
+    bgm_volume: float,
+    fade_out_sec: float,
+    total_duration_sec: float,
+) -> Path:
+    ffmpeg = _ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for audio mixing")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fade_start = max(0.0, total_duration_sec - fade_out_sec)
+
+    if vo_path is None:
+        filter_complex = (
+            f"[0:a]volume={bgm_volume},afade=t=out:st={fade_start:.3f}:d={fade_out_sec:.3f}[out]"
+        )
+        maps = ["-map", "[out]"]
+        inputs = ["-i", str(bgm_path)]
+    else:
+        filter_complex = (
+            f"[0:a]volume={bgm_volume},afade=t=out:st={fade_start:.3f}:d={fade_out_sec:.3f}[bgm];"
+            f"[1:a]volume=1.0[vo];"
+            f"[bgm][vo]amix=inputs=2:duration=longest:dropout_transition=0[out]"
+        )
+        maps = ["-map", "[out]"]
+        inputs = ["-i", str(bgm_path), "-i", str(vo_path)]
+
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                *inputs,
+                "-filter_complex",
+                filter_complex,
+                *maps,
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"FFmpeg audio mix failed: {exc.stderr or ''}") from exc
+    return output_path
+
+
+def mux_video_with_audio(video_path: Path, audio_path: Path, output_path: Path) -> Path:
+    ffmpeg = _ffmpeg_path()
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required for muxing")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-i",
+                str(video_path),
+                "-i",
+                str(audio_path),
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-shortest",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"FFmpeg mux failed: {exc.stderr or ''}") from exc
+    return output_path
+
+
+def burn_subtitles(
+    video_path: Path,
+    srt_path: Path,
+    output_path: Path,
+    *,
+    font_name: str = "Arial",
+) -> Path:
+    ffmpeg = _ffmpeg_for_subtitle_burn()
+    if not ffmpeg:
+        plain = _ffmpeg_path()
+        if not plain:
+            raise RuntimeError(
+                "FFmpeg is required for subtitle burn-in. Install with: brew install ffmpeg"
+            )
+        raise RuntimeError(
+            "FFmpeg is installed but missing libass (subtitles filter). "
+            "Install a full build with: brew install ffmpeg-full"
+        )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    work_dir = output_path.parent
+    local_srt = work_dir / "_pip_burn.srt"
+    shutil.copy2(srt_path, local_srt)
+
+    meta = probe_video(video_path)
+    frame_height = int(meta["height"])
+    font_size = max(18, int(round(frame_height * 0.04)))
+    force_style = (
+        f"FontName={font_name},FontSize={font_size},PrimaryColour=&HFFFFFF,"
+        "OutlineColour=&H000000,Outline=2,BorderStyle=1,Alignment=2,MarginV=86"
+    )
+    escaped_style = force_style.replace("\\", "\\\\").replace(",", r"\,")
+    vf = f"subtitles=_pip_burn.srt:force_style={escaped_style}"
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-i",
+                video_path.name,
+                "-vf",
+                vf,
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "copy",
+                output_path.name,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            cwd=str(work_dir),
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"FFmpeg subtitle burn failed: {exc.stderr or ''}") from exc
+    finally:
+        local_srt.unlink(missing_ok=True)
+
+    return output_path
 
 
 def _concat_with_opencv(inputs: list[Path], output: Path) -> Path:

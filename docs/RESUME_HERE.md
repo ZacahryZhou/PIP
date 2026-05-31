@@ -68,6 +68,8 @@ DEEPSEEK_API_KEY=sk-你的key
 
 | 步骤 16–17 DeepSeek 剧本/分镜 | ✅ |
 | 步骤 18 fal 真视频 + keyframe | ✅ 已跑通（`job_20260530_010101`，~$3.17 画面 COGS） |
+
+**学习流水线：** 见 [`docs/PIPELINE_FLOW_DETAILED.md`](PIPELINE_FLOW_DETAILED.md)（每阶段读写哪些文件）。
 | 步骤 18b TTS + BGM + 字幕混音 | ⏳ **下一步（完整 MVP）** |
 | 步骤 19 Telegram 收发 | ⏳ |
 | 步骤 20 加固（断点恢复、降本） | ⏳ 可选 |

@@ -189,7 +189,9 @@ class PipelineOrchestrator:
         if stop_after == "validated":
             return job
 
-        final_path = run_postproduction(job, shots)
+        final_path = run_postproduction(
+            job, script, shots, settings=self.settings, mock=mock
+        )
         self._update_state(
             job,
             status="assembled",

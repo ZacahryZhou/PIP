@@ -25,6 +25,8 @@ def generate_fal_keyframe(
     api_key: str,
     model: str,
     prompt: str,
+    width: int = 1920,
+    height: int = 1080,
 ) -> FalImageResult:
     """Generate one cinematic still frame and save it locally."""
     fal_client = require_fal_client(api_key)
@@ -32,7 +34,7 @@ def generate_fal_keyframe(
         model,
         arguments={
             "prompt": prompt,
-            "image_size": "landscape_16_9",
+            "image_size": {"width": width, "height": height},
             "output_format": "png",
         },
         with_logs=True,
