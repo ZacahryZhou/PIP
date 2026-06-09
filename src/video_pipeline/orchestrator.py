@@ -32,6 +32,7 @@ from video_pipeline.pipeline.intake import (
 )
 from video_pipeline.pipeline.approval import merge_job_state, record_storyboard_approval
 from video_pipeline.pipeline import run_generation, run_keyframe_generation, run_postproduction, run_quality_control
+from video_pipeline.pipeline.asset_binding import run_asset_binding
 from video_pipeline.pipeline.character_assets import run_character_assets
 from video_pipeline.pipeline.reference_assets import run_reference_assets
 from video_pipeline.pipeline.resume import load_routing_plan
@@ -800,12 +801,10 @@ class PipelineOrchestrator:
         )
 
         next_version = current_preview_version(job) + 1
-        merge_job_state(job, status="preview_started", current_stage="preview_started")
-        preview = run_storyboard_preview(
+        preview = self._run_storyboard_preview_stage(
             job,
             script,
             shots,
-            settings=self.settings,
             mock=mock,
             preview_version=next_version,
         )
@@ -843,6 +842,17 @@ class PipelineOrchestrator:
         mock: bool,
         preview_version: int | None = None,
     ):
+        merge_job_state(job, status="asset_binding_started", current_stage="asset_binding_started")
+        _, shots = run_asset_binding(job, script, shots)
+        merge_job_state(
+            job,
+            status="assets_bound",
+            current_stage="assets_bound",
+            artifact_paths={
+                "shot_asset_binding": str(job.reports_dir / "shot_asset_binding.json"),
+                "shots": str(job.shots_path),
+            },
+        )
         merge_job_state(job, status="preview_started", current_stage="preview_started")
         preview = run_storyboard_preview(
             job,
@@ -1059,6 +1069,11 @@ class PipelineOrchestrator:
         stop_after: str | None,
         require_user_approval: bool = True,
     ) -> JobPaths:
+        from video_pipeline.pipeline.asset_binding import load_shot_asset_binding_report, run_asset_binding
+
+        if load_shot_asset_binding_report(job) is None:
+            _, shots = run_asset_binding(job, script, shots)
+
         gate = validate_storyboard_gate(
             job,
             shots,

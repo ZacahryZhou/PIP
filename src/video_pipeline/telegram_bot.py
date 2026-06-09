@@ -33,7 +33,7 @@ from video_pipeline.pipeline.delivery import (
     telegram_get_file,
     telegram_get_updates,
 )
-from video_pipeline.schemas import GatewayPayload, ShotsDocument
+from video_pipeline.schemas import GatewayPayload, ScriptPlan, ShotsDocument
 from video_pipeline.telegram_collection import (
     CollectionStep,
     advance_collection,
@@ -259,6 +259,7 @@ async def deliver_preview_if_waiting(
         return False
     preview = load_preview_document(job)
     shots = ShotsDocument.model_validate_json(job.shots_path.read_text(encoding="utf-8"))
+    script = ScriptPlan.model_validate_json(job.script_path.read_text(encoding="utf-8"))
     await deliver_storyboard_previews(
         session,
         token=token,
@@ -266,6 +267,7 @@ async def deliver_preview_if_waiting(
         payload=payload,
         preview=preview,
         shots=shots,
+        script=script,
     )
     return True
 
@@ -393,13 +395,6 @@ async def handle_revision_notes(
 
     payload = GatewayPayload.model_validate_json(
         job.gateway_payload_path.read_text(encoding="utf-8")
-    )
-    preview = load_preview_document(job)
-    await send_telegram_message(
-        session,
-        token=token,
-        chat_id=chat_id,
-        text=f"Updated preview v{preview.preview_version}. Please review:",
     )
     await deliver_preview_if_waiting(
         session, token=token, chat_id=chat_id, job=job, payload=payload
@@ -632,6 +627,25 @@ async def handle_callback_query(
             token=token,
             callback_query_id=callback_id,
             text=f"Job is no longer waiting for approval ({state.get('status')}).",
+        )
+        return
+
+    try:
+        current_preview = load_preview_document(job)
+    except FileNotFoundError:
+        await answer_telegram_callback(
+            session,
+            token=token,
+            callback_query_id=callback_id,
+            text="Preview not found.",
+        )
+        return
+    if preview_version != current_preview.preview_version:
+        await answer_telegram_callback(
+            session,
+            token=token,
+            callback_query_id=callback_id,
+            text=f"Outdated preview (v{preview_version}). Use the latest preview message.",
         )
         return
 

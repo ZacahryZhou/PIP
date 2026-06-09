@@ -71,3 +71,39 @@ def test_build_fal_video_arguments_first_last_requires_both_urls() -> None:
     )
     assert args["start_image_url"] == "https://example.com/start.png"
     assert args["end_image_url"] == "https://example.com/end.png"
+
+
+def test_build_fal_video_arguments_passes_reference_urls() -> None:
+    settings = Settings()
+    shot = __import__("video_pipeline.schemas", fromlist=["Shot"]).Shot(
+        shot_id="shot_001",
+        scene_id="scene_001",
+        duration_sec=5,
+        subject="test",
+        shot_size="MS",
+        camera_angle="eye level",
+        camera_move="static",
+        action="walk",
+        facial_expression="neutral",
+        character_gaze="forward",
+        blocking="center",
+        mood="calm",
+        scene_type="realistic",
+        motion_intensity="low",
+        has_characters=True,
+        character_ids=["Coffeefee"],
+        character_prompts=["Coffeefee in neutral pose"],
+        generation_mode="first_last_frame",
+        generation_mode_reason="test",
+    )
+    args = build_fal_video_arguments(
+        settings=settings,
+        route=route("kling", "first_last_frame"),
+        shot=shot,
+        prompt="prompt",
+        endpoint="kling-fl-endpoint",
+        start_image_url="https://example.com/start.png",
+        end_image_url="https://example.com/end.png",
+        reference_image_urls=["https://example.com/char.png"],
+    )
+    assert args["reference_image_urls"] == ["https://example.com/char.png"]

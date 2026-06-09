@@ -56,8 +56,16 @@ def preview_matches_approval(
     for item in preview.items:
         if item.status != "ok":
             return False
-        if not (job.root / item.preview_image_path).is_file():
+        frame_paths = [
+            rel
+            for rel in (item.start_image_path, item.end_image_path, item.preview_image_path)
+            if rel
+        ]
+        if not frame_paths:
             return False
+        for rel in frame_paths:
+            if not (job.root / rel).is_file():
+                return False
     return True
 
 

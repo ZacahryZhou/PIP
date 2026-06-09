@@ -7,6 +7,7 @@ from pathlib import Path
 from video_pipeline.config import Settings
 from video_pipeline.media.ffmpeg import parse_resolution
 from video_pipeline.pipeline.keyframe_generation import keyframe_end_path, keyframe_path, keyframe_start_path
+from video_pipeline.pipeline.asset_binding import load_shot_asset_binding_map, video_reference_paths
 from video_pipeline.pipeline.prompts import build_video_prompt
 from video_pipeline.pipeline.resume import generation_output_path, load_generation_report
 from video_pipeline.pipeline.stage_report import StageTimer, write_stage_report
@@ -60,6 +61,7 @@ def run_generation(
     width, height = parse_resolution(settings.target_resolution)
     shot_by_id = {shot.shot_id: shot for shot in shots.shots}
     keyframe_report = _load_keyframe_report(job)
+    binding_map = load_shot_asset_binding_map(job)
     keyframe_by_shot = {
         item.shot_id: item for item in (keyframe_report.results if keyframe_report else [])
     }
@@ -134,6 +136,12 @@ def run_generation(
 
         label = f"{shot.shot_id}|{mode}"
         prompt = build_video_prompt(shot, script)
+        binding = binding_map.get(shot.shot_id)
+        reference_paths: list[str] | None = None
+        if binding is not None:
+            refs = video_reference_paths(job, binding)
+            if refs:
+                reference_paths = [str(path) for path in refs]
 
         attempts: list[GenerationAttempt] = []
         models_to_try = [route.preferred_model]
@@ -165,6 +173,7 @@ def run_generation(
                             prompt=prompt,
                             keyframe_path=resolved_keyframe,
                             end_keyframe_path=resolved_end,
+                            reference_image_paths=reference_paths,
                         )
                         provider_request_id = result.provider_request_id
                         provider_requests += 1

@@ -6,10 +6,9 @@ OpenClaw / Telegram 驱动的文本 + 图片 → 短视频自动化系统。
 
 | 文件 | 用途 |
 |------|------|
-| **`docs/ARCHITECTURE.md`** | **架构唯一权威（重构中）** |
+| **`docs/ARCHITECTURE.md`** | **架构唯一权威** |
 | `docs/RESUME_HERE.md` | 续开发入口 |
-| `docs/PROJECT_STRUCTURE.md` | 目录结构 |
-| `docs/COST_AND_OPTIMIZATION.md` | 成本参考 |
+| `docs/COST_AND_OPTIMIZATION.md` | 成本参考（非架构定稿） |
 
 ## 快速验证
 

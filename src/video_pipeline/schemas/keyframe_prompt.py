@@ -1,6 +1,10 @@
 """Keyframe prompt artifact — debuggable image prompts per shot."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+PromptSource = Literal["llm", "template"]
 
 
 class KeyframePromptEntry(BaseModel):
@@ -9,6 +13,7 @@ class KeyframePromptEntry(BaseModel):
     start_prompt: str = Field(min_length=1)
     end_prompt: str = Field(min_length=1)
     scene_master_path: str | None = None
+    prompt_source: PromptSource = "template"
 
 
 class KeyframePromptsDocument(BaseModel):

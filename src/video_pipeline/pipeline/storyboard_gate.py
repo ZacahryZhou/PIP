@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from video_pipeline.pipeline.approval import load_approval_document
+from video_pipeline.pipeline.asset_binding import load_shot_asset_binding_report, shot_asset_binding_report_path
 from video_pipeline.pipeline.character_assets import (
     character_pack_complete,
     load_character_asset_report,
@@ -55,6 +56,29 @@ def validate_storyboard_gate(
             entry = report_by_scene.get(scene_id)
             if entry is None or not scene_pack_complete(entry):
                 reasons.append(f"Incomplete scene pack for {scene_id}")
+
+    binding_report = load_shot_asset_binding_report(job)
+    if binding_report is None or not shot_asset_binding_report_path(job).is_file():
+        reasons.append("Missing shot_asset_binding.json")
+    else:
+        binding_by_shot = {entry.shot_id: entry for entry in binding_report.entries}
+        for shot in shots.shots:
+            binding = binding_by_shot.get(shot.shot_id)
+            if binding is None:
+                reasons.append(f"Missing asset binding for {shot.shot_id}")
+                continue
+            if shot.needs_scene_master and not binding.scene_master_path:
+                reasons.append(f"Missing scene master binding for {shot.shot_id} ({shot.scene_id})")
+            if shot.has_characters:
+                for character_id in shot.character_ids:
+                    char_binding = next(
+                        (item for item in binding.character_bindings if item.character_id == character_id),
+                        None,
+                    )
+                    if char_binding is None or not char_binding.reference_image_paths:
+                        reasons.append(
+                            f"Missing character asset binding for {character_id} on {shot.shot_id}"
+                        )
 
     preview_path = job.storyboard_preview_path
     if not preview_path.is_file():

@@ -27,16 +27,20 @@ def generate_fal_keyframe(
     prompt: str,
     width: int = 1920,
     height: int = 1080,
+    reference_image_path: Path | None = None,
 ) -> FalImageResult:
     """Generate one cinematic still frame and save it locally."""
     fal_client = require_fal_client(api_key)
+    arguments: dict[str, object] = {
+        "prompt": prompt,
+        "image_size": {"width": width, "height": height},
+        "output_format": "png",
+    }
+    if reference_image_path is not None:
+        arguments["image_url"] = fal_client.upload_file(str(reference_image_path))
     result = fal_client.subscribe(
         model,
-        arguments={
-            "prompt": prompt,
-            "image_size": {"width": width, "height": height},
-            "output_format": "png",
-        },
+        arguments=arguments,
         with_logs=True,
     )
     image_url = first_url(result, preferred_exts=(".png", ".jpg", ".jpeg", ".webp"))

@@ -40,6 +40,8 @@ class Shot(BaseModel):
     character_reference_image_paths: list[str] = Field(default_factory=list)
     scene_reference_id: str | None = None
     scene_reference_image_path: str | None = None
+    other_reference_ids: list[str] = Field(default_factory=list)
+    other_reference_image_paths: list[str] = Field(default_factory=list)
     visual_style: str | None = None
     color_palette: str | None = None
     style_tags: list[str] = Field(default_factory=list)

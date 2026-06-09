@@ -2,6 +2,13 @@
 
 from video_pipeline.schemas.character_asset import CharacterAssetEntry, CharacterAssetReport
 from video_pipeline.schemas.approval import ApprovalStatus, StoryboardApprovalDocument
+from video_pipeline.schemas.asset_binding import (
+    CharacterShotBinding,
+    ReferenceShotBinding,
+    SceneAssetGroup,
+    ShotAssetBinding,
+    ShotAssetBindingReport,
+)
 from video_pipeline.schemas.bgm import BGMPrepReport
 from video_pipeline.schemas.gateway import (
     ChannelName,
@@ -44,6 +51,7 @@ __all__ = [
     "BGMPrepReport",
     "CharacterAssetEntry",
     "CharacterAssetReport",
+    "CharacterShotBinding",
     "ChannelName",
     "CharacterReferenceImage",
     "DialogueLine",
@@ -54,8 +62,10 @@ __all__ = [
     "IntakeGap",
     "IntakeGapResolution",
     "IntakePlan",
+    "CharacterShotBinding",
     "ReferenceAssetEntry",
     "ReferenceAssetReport",
+    "ReferenceShotBinding",
     "ReferenceIntakeJob",
     "SceneIntakeJob",
     "SceneShotHint",
@@ -72,6 +82,7 @@ __all__ = [
     "QCReport",
     "RouteDecision",
     "RoutingPlan",
+    "SceneAssetGroup",
     "SceneMapEntry",
     "SceneMapReport",
     "OtherReferenceImage",
@@ -83,6 +94,8 @@ __all__ = [
     "GenerationMode",
     "Shot",
     "ShotSize",
+    "ShotAssetBinding",
+    "ShotAssetBindingReport",
     "ShotGenerationResult",
     "ShotsDocument",
     "StoryboardApprovalDocument",

@@ -16,6 +16,8 @@ JobStatus = Literal[
     "scripted",
     "reference_assets_ready",
     "storyboarded",
+    "asset_binding_started",
+    "assets_bound",
     "preview_started",
     "preview_ready",
     "awaiting_storyboard_approval",

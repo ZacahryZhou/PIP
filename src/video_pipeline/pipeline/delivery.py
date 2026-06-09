@@ -12,7 +12,7 @@ from typing import Any
 import aiohttp
 import certifi
 
-from video_pipeline.schemas import GatewayPayload, JobState, RoutingPlan, ShotsDocument, StoryboardPreviewDocument
+from video_pipeline.schemas import GatewayPayload, JobState, RoutingPlan, ScriptPlan, ShotsDocument, StoryboardPreviewDocument
 from video_pipeline.storage import JobPaths, save_job_state
 from video_pipeline.storage.artifacts import write_json
 
@@ -199,15 +199,82 @@ def build_preview_caption(
     subject: str,
     duration_sec: float,
     dialogue_text: str | None = None,
+    frame: str | None = None,
 ) -> str:
+    header = f"{shot_id} · {scene_id}"
+    if frame:
+        header = f"{header} · {frame}"
     lines = [
-        f"{shot_id} · {scene_id}",
+        header,
         subject,
         f"Duration: {duration_sec:g}s",
     ]
     if dialogue_text:
         lines.append(f'Dialogue: "{dialogue_text}"')
     return "\n".join(lines)
+
+
+def build_script_review_summary(script: ScriptPlan) -> str:
+    """Human-readable script overview for storyboard approval."""
+    lines = [
+        "Script summary",
+        f"Arc: {script.narrative_arc}",
+        f"Style: {script.visual_style} · {script.color_tone}",
+        f"Duration: {script.total_duration_sec:g}s · {len(script.scene_list)} scenes",
+    ]
+    if script.characters_in_use:
+        lines.append(f"Characters: {', '.join(script.characters_in_use)}")
+    lines.append("")
+    lines.append("Scenes:")
+    for scene in script.scene_list:
+        title = scene.scene_title or scene.location
+        lines.append(
+            f"- {scene.scene_id} {title} ({scene.duration_sec:g}s): {scene.action_summary}"
+        )
+        if scene.dialogue:
+            snippet = scene.dialogue[0].text
+            if len(snippet) > 80:
+                snippet = snippet[:77] + "..."
+            lines.append(f'  Dialogue: "{snippet}"')
+    return "\n".join(lines)
+
+
+def build_shots_review_summary(shots: ShotsDocument) -> str:
+    """Compact shot list for storyboard approval."""
+    lines = [
+        f"Shot list ({len(shots.shots)} shots)",
+    ]
+    for shot in shots.shots:
+        dialogue = shot.dialogue[0].text if shot.dialogue else None
+        line = (
+            f"- {shot.shot_id} · {shot.scene_id} · {shot.duration_sec:g}s · "
+            f"{shot.shot_size} · {shot.subject}"
+        )
+        lines.append(line)
+        if dialogue:
+            snippet = dialogue if len(dialogue) <= 60 else dialogue[:57] + "..."
+            lines.append(f'  "{snippet}"')
+    return "\n".join(lines)
+
+
+def _chunk_telegram_text(text: str, *, limit: int = 3900) -> list[str]:
+    if len(text) <= limit:
+        return [text]
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for line in text.splitlines():
+        addition = len(line) + (1 if current else 0)
+        if current and current_len + addition > limit:
+            chunks.append("\n".join(current))
+            current = [line]
+            current_len = len(line)
+        else:
+            current.append(line)
+            current_len += addition
+    if current:
+        chunks.append("\n".join(current))
+    return chunks
 
 
 async def deliver_storyboard_previews(
@@ -218,39 +285,75 @@ async def deliver_storyboard_previews(
     payload: GatewayPayload,
     preview: StoryboardPreviewDocument,
     shots: ShotsDocument,
+    script: ScriptPlan,
 ) -> None:
     chat_id = payload.user_id
     shot_by_id = {shot.shot_id: shot for shot in shots.shots}
+    ok_items = [item for item in preview.items if item.status == "ok"]
 
     await send_telegram_message(
         session,
         token=token,
         chat_id=chat_id,
         text=(
-            f"Storyboard preview for {job.job_id} (v{preview.preview_version}). "
-            "Review each shot below, then choose an action."
+            f"Storyboard preview for {job.job_id} (v{preview.preview_version}).\n"
+            f"{len(ok_items)} shot(s) with start + end frames.\n"
+            "Review the script summary, shot list, and frames below, then choose an action."
         ),
     )
+
+    for chunk in _chunk_telegram_text(build_script_review_summary(script)):
+        await send_telegram_message(
+            session,
+            token=token,
+            chat_id=chat_id,
+            text=chunk,
+        )
+
+    for chunk in _chunk_telegram_text(build_shots_review_summary(shots)):
+        await send_telegram_message(
+            session,
+            token=token,
+            chat_id=chat_id,
+            text=chunk,
+        )
 
     for item in preview.items:
         if item.status != "ok":
             continue
         shot = shot_by_id[item.shot_id]
         dialogue_text = shot.dialogue[0].text if shot.dialogue else None
-        caption = build_preview_caption(
+        start_caption = build_preview_caption(
             shot_id=shot.shot_id,
             scene_id=shot.scene_id,
             subject=shot.subject,
             duration_sec=shot.duration_sec,
             dialogue_text=dialogue_text,
+            frame="Start",
         )
-        image_path = job.root / item.preview_image_path
+        end_caption = build_preview_caption(
+            shot_id=shot.shot_id,
+            scene_id=shot.scene_id,
+            subject=shot.subject,
+            duration_sec=shot.duration_sec,
+            dialogue_text=dialogue_text,
+            frame="End",
+        )
+        start_path = job.root / item.start_image_path
+        end_path = job.root / item.end_image_path
         await send_telegram_photo(
             session,
             token=token,
             chat_id=chat_id,
-            image_path=image_path,
-            caption=caption,
+            image_path=start_path,
+            caption=start_caption,
+        )
+        await send_telegram_photo(
+            session,
+            token=token,
+            chat_id=chat_id,
+            image_path=end_path,
+            caption=end_caption,
         )
 
     keyboard = {

@@ -7,6 +7,7 @@ from video_pipeline.agents.keyframe_prompt_agent import run_keyframe_prompt_agen
 from video_pipeline.config import Settings
 from video_pipeline.media.ffmpeg import parse_resolution
 from video_pipeline.pipeline.approval import load_preview_document
+from video_pipeline.pipeline.asset_binding import load_shot_asset_binding_map, primary_conditioning_path
 from video_pipeline.pipeline.resume import keyframe_entry_complete, load_keyframe_report
 from video_pipeline.pipeline.stage_report import StageTimer, write_stage_report
 from video_pipeline.pipeline.scene_maps import load_scene_master_map
@@ -54,6 +55,7 @@ def _generate_still(
     width: int,
     height: int,
     label: str,
+    reference_image_path: Path | None = None,
 ) -> str | None:
     if mock:
         generate_mock_keyframe(output, width=width, height=height, label=label)
@@ -67,6 +69,7 @@ def _generate_still(
         prompt=prompt,
         width=width,
         height=height,
+        reference_image_path=reference_image_path,
     )
     return result.provider_request_id
 
@@ -91,6 +94,7 @@ def run_keyframe_generation(
     width, height = parse_resolution(settings.target_resolution)
     shot_by_id = {shot.shot_id: shot for shot in shots.shots}
     scene_masters = load_scene_master_map(job)
+    binding_map = load_shot_asset_binding_map(job)
     job.keyframes_dir.mkdir(parents=True, exist_ok=True)
     existing_report = load_keyframe_report(job)
     existing_by_shot = {item.shot_id: item for item in existing_report.results} if existing_report else {}
@@ -103,6 +107,7 @@ def run_keyframe_generation(
         script,
         shots,
         scene_masters=scene_masters,
+        settings=settings,
         mock=mock,
     )
     prompt_by_shot = {item.shot_id: item for item in prompts_doc.items}
@@ -136,6 +141,10 @@ def run_keyframe_generation(
             continue
 
         entry = prompt_by_shot[shot.shot_id]
+        binding = binding_map.get(shot.shot_id)
+        reference_path = (
+            primary_conditioning_path(job, shot, binding) if binding is not None else None
+        )
         start_output = keyframe_start_path(job, shot.shot_id)
         end_output = keyframe_end_path(job, shot.shot_id)
         legacy_output = keyframe_path(job, shot.shot_id)
@@ -156,6 +165,7 @@ def run_keyframe_generation(
                     width=width,
                     height=height,
                     label=f"{shot.shot_id}|start",
+                    reference_image_path=reference_path,
                 )
                 if provider_request_id is not None:
                     provider_requests += 1
@@ -173,6 +183,7 @@ def run_keyframe_generation(
                     width=width,
                     height=height,
                     label=f"{shot.shot_id}|end",
+                    reference_image_path=reference_path,
                 )
                 if end_provider_id is not None:
                     provider_requests += 1

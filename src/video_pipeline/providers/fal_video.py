@@ -43,6 +43,7 @@ def build_fal_video_arguments(
     endpoint: str,
     start_image_url: str | None = None,
     end_image_url: str | None = None,
+    reference_image_urls: list[str] | None = None,
 ) -> dict[str, object]:
     duration = max(1, math.ceil(shot.duration_sec))
     arguments: dict[str, object] = {
@@ -58,6 +59,8 @@ def build_fal_video_arguments(
         arguments["end_image_url"] = end_image_url
         # Some fal Kling endpoints also accept image_url as alias for start.
         arguments["image_url"] = start_image_url
+    if reference_image_urls:
+        arguments["reference_image_urls"] = reference_image_urls
     return arguments
 
 
@@ -70,6 +73,7 @@ def generate_fal_clip(
     prompt: str,
     keyframe_path: str | None = None,
     end_keyframe_path: str | None = None,
+    reference_image_paths: list[str] | None = None,
 ) -> FalVideoResult:
     """Generate one Kling first-last-frame clip via fal."""
     fal_client = require_fal_client(settings.fal_key)
@@ -83,6 +87,10 @@ def generate_fal_clip(
         start_url = fal_client.upload_file(keyframe_path)
         end_url = fal_client.upload_file(end_keyframe_path)
 
+    reference_urls: list[str] | None = None
+    if reference_image_paths:
+        reference_urls = [fal_client.upload_file(path) for path in reference_image_paths]
+
     arguments = build_fal_video_arguments(
         settings=settings,
         route=route,
@@ -91,6 +99,7 @@ def generate_fal_clip(
         endpoint=endpoint,
         start_image_url=start_url,
         end_image_url=end_url,
+        reference_image_urls=reference_urls,
     )
 
     result = fal_client.subscribe(endpoint, arguments=arguments, with_logs=True)

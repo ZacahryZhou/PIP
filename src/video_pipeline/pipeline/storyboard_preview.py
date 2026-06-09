@@ -7,8 +7,10 @@ from pathlib import Path
 
 from video_pipeline.config import Settings
 from video_pipeline.media.ffmpeg import parse_resolution
+from video_pipeline.agents.keyframe_prompt_agent import run_keyframe_prompt_agent
 from video_pipeline.pipeline.approval import load_preview_document
-from video_pipeline.pipeline.prompts import build_keyframe_end_prompt, build_keyframe_start_prompt, build_preview_prompt
+from video_pipeline.pipeline.asset_binding import load_shot_asset_binding_map, primary_conditioning_path
+from video_pipeline.pipeline.prompts import build_preview_prompt
 from video_pipeline.pipeline.resume import preview_matches_approval
 from video_pipeline.pipeline.scene_maps import load_scene_master_map
 from video_pipeline.pipeline.stage_report import StageTimer, write_stage_report
@@ -69,31 +71,36 @@ def run_storyboard_preview(
             str(job.shots_path.relative_to(job.root)),
             str(job.reports_dir / "character_asset_report.json"),
             str(job.reports_dir / "scene_map_report.json"),
+            str(job.keyframes_dir / "keyframe_prompts.json"),
         ],
     )
     width, height = parse_resolution(settings.target_resolution)
     scene_masters = load_scene_master_map(job)
+    binding_map = load_shot_asset_binding_map(job)
+    prompt_doc = run_keyframe_prompt_agent(
+        job,
+        script,
+        shots,
+        scene_masters=scene_masters,
+        settings=settings,
+        mock=mock,
+    )
+    prompt_by_shot = {entry.shot_id: entry for entry in prompt_doc.items}
     items: list[StoryboardPreviewItem] = []
     failures: list[str] = []
 
     for shot in shots.shots:
         scene = _scene_for_shot(script, shot.scene_id)
-        master = scene_masters.get(shot.scene_id)
-        start_prompt = build_keyframe_start_prompt(
-            shot,
-            script,
-            scene=scene,
-            scene_master_path=master,
-        )
-        end_prompt = build_keyframe_end_prompt(
-            shot,
-            script,
-            scene=scene,
-            scene_master_path=master,
-        )
+        prompt_entry = prompt_by_shot[shot.shot_id]
+        start_prompt = prompt_entry.start_prompt
+        end_prompt = prompt_entry.end_prompt
         summary_prompt = build_preview_prompt(shot, script)
         start_output = preview_start_path(job, shot.shot_id, preview_version=version)
         end_output = preview_end_path(job, shot.shot_id, preview_version=version)
+        binding = binding_map.get(shot.shot_id)
+        reference_path = (
+            primary_conditioning_path(job, shot, binding) if binding is not None else None
+        )
 
         try:
             for output, prompt, label in (
@@ -117,6 +124,7 @@ def run_storyboard_preview(
                         prompt=prompt,
                         width=width,
                         height=height,
+                        reference_image_path=reference_path,
                     )
             items.append(
                 StoryboardPreviewItem(

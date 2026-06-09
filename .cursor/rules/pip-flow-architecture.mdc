@@ -69,6 +69,6 @@ flowchart TB
 
 **Orchestrator 入口：** `orchestrator.py` → `_run_post_intake_branches` · resume 支持 `plot_done` / `scripted` / `reference_assets_ready` / `storyboarded`
 
-**下游执行层**（Preview / Kling / TTS / 交付）见 `docs/ARCHITECTURE.md`，**不替换**上表 Multi-Agent 定稿结构。
+**下游执行层**（Preview / 视频 / TTS / 交付）见 `docs/ARCHITECTURE.md` 中「待产品定稿」说明；**不替换**上表 Multi-Agent 定稿结构。
 
 **权威文档：** `docs/ARCHITECTURE.md` · `docs/RESUME_HERE.md`

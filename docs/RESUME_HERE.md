@@ -1,16 +1,8 @@
 # PIP 续开发备忘
 
-> 更新：2026-06-08 — **Multi-Agent 重构中**  
+> 更新：2026-06-08  
 > **架构唯一权威：** `docs/ARCHITECTURE.md`  
 > 仓库：`/Users/yixinzhou/Desktop/PIP`
-
----
-
-## 当前在做什么
-
-**按定稿架构重构：** Intake 一分五路（叙事左支 + 资产右支并行），不再按旧 V2 线性文档开发。
-
-旧架构文档已全部删除（`NEW_ARCHITECTURE_V2.md`、`NEW_ARCHITECTURE_TASKFLOW.md`、`PIP_DEVELOPMENT_FLOW.md` 等）。
 
 ---
 
@@ -24,6 +16,7 @@
       ├─ 人物图     → Character Agent ────┤
       ├─ 场景图     → Scene Agent ──────────┼→ 缺图 → API 生成
       └─ 其它参考图 → Reference Agent ────┘
+      → Preview → 审批 → （视频/音频/交付：待你定稿）
 ```
 
 完整图见 **`docs/ARCHITECTURE.md`**。
@@ -37,9 +30,9 @@
 | Intake + Clarification | ✅ |
 | Plot（完整剧情） | ✅ 规则/mock |
 | Script | ✅ |
-| Storyboard ↔ scene_shot_hints | ⏭ |
-| Character / Scene / Reference 从 Intake 分叉 | ⏭ |
-| 下游 Preview / Kling / 交付 | 🔄 待对齐重构 |
+| Reference / Character / Scene 从 Intake 分叉 | ✅ orchestrator 分阶段并行 |
+| Storyboard ↔ scene_shot_hints | ⚠️ 部分 |
+| 下游 Preview / 视频 / 交付 | 🔄 待你对齐定稿 |
 
 ---
 

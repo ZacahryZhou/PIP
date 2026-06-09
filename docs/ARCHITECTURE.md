@@ -59,8 +59,41 @@ intake_done
   → [并行] Reference Agent  +  Script Agent  → scripted / reference_assets_ready
   → [并行] Character Agent + Scene Agent + Storyboard Agent
   → character_assets_ready + scene_maps_ready + storyboarded
-  → Preview → 审批 → Kling FL → TTS → final.mp4
+  → Asset Binding → Preview → 审批
+  → （视频 / TTS / 后期 / 交付 — 待产品定稿，代码中有占位实现）
 ```
+
+### 上游链接总图（含 Asset Binding）
+
+```mermaid
+flowchart TB
+    IA["Intake<br/>intake_plan.json"]
+    P["Plot"]
+    SA["Script<br/>script.json"]
+    RF["Reference<br/>reference_asset_report.json"]
+    CA["Character<br/>character_asset_report.json"]
+    SC["Scene<br/>scene_map_report.json"]
+    SB["Storyboard<br/>shots.json + scene_shot_hints.json"]
+    AB["Asset Binding<br/>shot_asset_binding.json"]
+    PV["Preview / Gate"]
+    VG["Video / TTS / 交付<br/>待产品定稿"]
+
+    IA --> P --> SA
+    IA --> RF
+    IA --> CA
+    IA --> SC
+    IA -->|scene_shot_hints| SB
+    SA --> SB
+    CA --> AB
+    SC --> AB
+    RF --> AB
+    SB --> AB
+    AB --> PV --> VG
+
+    style VG stroke-dasharray: 5 5
+```
+
+**链接要点：** `scene_shot_hints` 从 Intake 进 Storyboard；三份资产 report + `shots.json` 在 Binding 阶段按 `scene_id` / `character_ids` / `linked_reference_ids` 对齐，写回 `shots.json` 后供 Preview / Gate 使用。
 
 | 阶段 | 模块 | 产物 |
 |------|------|------|
@@ -71,7 +104,15 @@ intake_done
 | Reference | `pipeline/reference_assets.py` | `assets/references/`, `reference_asset_report.json` |
 | Character | `pipeline/character_assets.py` | `assets/characters/*_turnaround/` |
 | Scene | `pipeline/scene_maps.py` | `scene_maps/*` |
-| 下游 | preview / gate / generation | 见 orchestrator `_run_pre_approval_pipeline` |
+| 下游 | preview / gate / （generation 等占位） | 审批后执行层 **待产品定稿** |
+
+---
+
+## 下游执行层（待产品定稿）
+
+Multi-Agent 上游（Intake 五路）是定稿结构。**视频怎么生成、用什么模型、是否 keyframe、如何混音交付** 尚未作为产品架构定稿。
+
+仓库里 `routing_agent.py`、`generation.py` 等是 **可跑的占位实现**，不代表最终方案。讨论架构时以本节 Intake 分叉图为准，不要把占位代码当成已定产品形态。
 
 ---
 
@@ -80,6 +121,7 @@ intake_done
 ```text
 intake_done → plot_done → scripted → reference_assets_ready
   → character_assets_ready + scene_maps_ready + storyboarded
+  → assets_bound
   → preview_ready → awaiting_storyboard_approval → storyboard_approved
   → routed → generated → delivered
 ```

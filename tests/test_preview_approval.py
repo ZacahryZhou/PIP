@@ -51,6 +51,8 @@ def test_mock_storyboard_preview_writes_manifest(tmp_path: Path) -> None:
     assert (job.reports_dir / "preview_report.json").is_file()
     for item in preview.items:
         assert (job.root / item.preview_image_path).is_file()
+        assert (job.root / item.start_image_path).is_file()
+        assert (job.root / item.end_image_path).is_file()
 
 
 def test_orchestrator_stops_at_approval_without_routing(tmp_path: Path) -> None:
