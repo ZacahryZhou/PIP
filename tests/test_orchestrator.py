@@ -49,7 +49,12 @@ def test_run_stop_after_routed(tmp_path: Path, monkeypatch) -> None:
     orchestrator = PipelineOrchestrator(
         Settings(job_storage_dir=str(tmp_path), video_pipeline_mock=True)
     )
-    job = orchestrator.run(payload_file, mock=True, stop_after="routed")
+    job = orchestrator.run(
+        payload_file,
+        mock=True,
+        stop_after="routed",
+        require_approval=False,
+    )
 
     assert ScriptPlan.model_validate(
         json.loads(job.script_path.read_text(encoding="utf-8"))
@@ -67,3 +72,27 @@ def test_run_stop_after_routed(tmp_path: Path, monkeypatch) -> None:
 
     state = json.loads(job.job_state_path.read_text(encoding="utf-8"))
     assert state["status"] == "routed"
+
+
+def test_run_stops_with_cancelled_budget_when_over_limit(tmp_path: Path) -> None:
+    from video_pipeline.config import Settings
+
+    fixtures = Path(__file__).parent / "fixtures"
+    orchestrator = PipelineOrchestrator(
+        Settings(
+            job_storage_dir=str(tmp_path),
+            video_pipeline_mock=True,
+            max_job_cost_usd=0.5,
+        )
+    )
+    job = orchestrator.run(
+        fixtures / "gateway_payload.json",
+        mock=True,
+        require_approval=False,
+    )
+
+    state = json.loads(job.job_state_path.read_text(encoding="utf-8"))
+    assert state["status"] == "cancelled_budget"
+    assert state["error_message"]
+    assert "exceeds budget" in state["error_message"].lower()
+    assert not (job.reports_dir / "generation_report.json").is_file()

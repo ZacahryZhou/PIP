@@ -1,0 +1,13 @@
+{
+  "raw_prompt": "原创动漫短剧 COFFEEFEE: THE ORCHESTRATOR，30秒竖屏情感治愈短剧，3D角色置于写实城市与咖啡店环境",
+  "channel": "telegram",
+  "user_id": "coffeefee_real_test",
+  "timestamp": "2026-06-08T12:00:00-07:00",
+  "has_script": true,
+  "user_script_text": "见 tests/fixtures/coffeefee_script.txt — 由 gateway 加载时内联",
+  "character_ids": ["coffeefee"],
+  "style_preset": "3d_anime_in_photoreal_env",
+  "style_notes": "3D stylized Scottish Fold kitten in 100% photoreal urban night and warm coffee shop. Cold blue to warm amber. Emotional arc: lonely to seen.",
+  "target_duration_sec": 30,
+  "language": "zh"
+}

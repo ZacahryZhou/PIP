@@ -14,9 +14,9 @@ multi-agent-video-pipeline/
 ├── package.json
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── RESUME_HERE.md
 │   ├── PROJECT_STRUCTURE.md
-│   ├── DEVELOPMENT_TASKS.md
-│   └── NEXT_MILESTONE.md
+│   └── COST_AND_OPTIMIZATION.md
 ├── rules/
 │   ├── MASTER.md
 │   ├── CHARACTERS.md
@@ -24,9 +24,7 @@ multi-agent-video-pipeline/
 │   ├── ROUTING.md
 │   └── POSTPROD.md
 ├── models/
-│   ├── seedance.md
-│   ├── kling.md
-│   └── wan_t2v.md
+│   └── kling.md
 ├── src/
 │   ├── openclaw_gateway/
 │   │   ├── index.ts
@@ -57,9 +55,7 @@ multi-agent-video-pipeline/
 │       ├── providers/
 │       │   ├── __init__.py
 │       │   ├── base.py
-│       │   ├── seedance.py
-│       │   ├── kling.py
-│       │   ├── wan_t2v.py
+│       │   ├── fal_video.py
 │       │   └── mock.py
 │       ├── pipeline/
 │       │   ├── __init__.py
@@ -104,7 +100,7 @@ multi-agent-video-pipeline/
 | `src/openclaw_gateway/` | Node.js gateway bridge for Telegram and WhatsApp. Node.js 网关层，连接 Telegram 和 WhatsApp。 |
 | `src/video_pipeline/schemas/` | Pydantic data contracts for every boundary. 每个边界的 Pydantic 数据契约。 |
 | `src/video_pipeline/agents/` | Script, storyboard, and routing agents. 剧本、分镜和路由 Agent。 |
-| `src/video_pipeline/providers/` | Seedance, Kling, Wan, and mock video generation adapters. 视频模型适配器。 |
+| `src/video_pipeline/providers/` | fal Kling, mock, and TTS adapters. 视频与 TTS 适配器。 |
 | `src/video_pipeline/pipeline/` | Multi-step generation, QC, post-production, and delivery flows. 生成、质检、后期和发送流程。 |
 | `src/video_pipeline/media/` | FFmpeg, subtitle, and music helpers. FFmpeg、字幕和配乐工具。 |
 | `src/video_pipeline/storage/` | Job state and artifact persistence. 任务状态和产物存储。 |

@@ -66,6 +66,35 @@ def _ffmpeg_for_subtitle_burn() -> str | None:
     return None
 
 
+def probe_audio_duration(path: Path) -> float:
+    """Return audio duration in seconds via ffprobe, or 0.0 when unavailable."""
+    ffprobe = shutil.which("ffprobe")
+    if ffprobe is None:
+        return 0.0
+    try:
+        result = subprocess.run(
+            [
+                ffprobe,
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError:
+        return 0.0
+    try:
+        return float(result.stdout.strip())
+    except ValueError:
+        return 0.0
+
+
 def probe_video(path: Path) -> dict[str, float | int]:
     import cv2
 

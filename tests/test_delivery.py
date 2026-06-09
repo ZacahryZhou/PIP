@@ -2,10 +2,9 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
-import aiohttp
 import pytest
-from aioresponses import aioresponses
 
 from video_pipeline.pipeline.delivery import (
     build_delivery_summary,
@@ -16,20 +15,39 @@ from video_pipeline.pipeline.delivery import (
 from video_pipeline.schemas import GatewayPayload
 
 
+class _MockResponse:
+    def __init__(self, payload: dict[str, Any]) -> None:
+        self._payload = payload
+
+    async def json(self) -> dict[str, Any]:
+        return self._payload
+
+    async def __aenter__(self) -> "_MockResponse":
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        return None
+
+
+class _MockSession:
+    """Minimal aiohttp session stub — avoids aioresponses/aiohttp version drift."""
+
+    def __init__(self, post_payload: dict[str, Any]) -> None:
+        self._post_payload = post_payload
+
+    def post(self, url: str, **kwargs: Any) -> _MockResponse:
+        return _MockResponse(self._post_payload)
+
+
 @pytest.mark.asyncio
 async def test_send_telegram_message(tmp_path: Path) -> None:
-    with aioresponses() as mocked:
-        mocked.post(
-            "https://api.telegram.org/bottest-token/sendMessage",
-            payload={"ok": True, "result": {"message_id": 42}},
-        )
-        async with aiohttp.ClientSession() as session:
-            message_id = await send_telegram_message(
-                session,
-                token="test-token",
-                chat_id="123456",
-                text="hello",
-            )
+    session = _MockSession({"ok": True, "result": {"message_id": 42}})
+    message_id = await send_telegram_message(
+        session,  # type: ignore[arg-type]
+        token="test-token",
+        chat_id="123456",
+        text="hello",
+    )
     assert message_id == 42
 
 
@@ -38,19 +56,14 @@ async def test_send_telegram_video(tmp_path: Path) -> None:
     video_path = tmp_path / "final.mp4"
     video_path.write_bytes(b"fake-video")
 
-    with aioresponses() as mocked:
-        mocked.post(
-            "https://api.telegram.org/bottest-token/sendVideo",
-            payload={"ok": True, "result": {"message_id": 99}},
-        )
-        async with aiohttp.ClientSession() as session:
-            message_id = await send_telegram_video(
-                session,
-                token="test-token",
-                chat_id="123456",
-                video_path=video_path,
-                caption="done",
-            )
+    session = _MockSession({"ok": True, "result": {"message_id": 99}})
+    message_id = await send_telegram_video(
+        session,  # type: ignore[arg-type]
+        token="test-token",
+        chat_id="123456",
+        video_path=video_path,
+        caption="done",
+    )
     assert message_id == 99
 
 
@@ -95,19 +108,14 @@ async def test_deliver_telegram_video_writes_report(tmp_path: Path) -> None:
         }
     )
 
-    with aioresponses() as mocked:
-        mocked.post(
-            "https://api.telegram.org/bottest-token/sendVideo",
-            payload={"ok": True, "result": {"message_id": 7}},
-        )
-        async with aiohttp.ClientSession() as session:
-            result = await deliver_telegram_video(
-                session,
-                token="test-token",
-                job=job,
-                payload=payload,
-                final_path=final_path,
-            )
+    session = _MockSession({"ok": True, "result": {"message_id": 7}})
+    result = await deliver_telegram_video(
+        session,  # type: ignore[arg-type]
+        token="test-token",
+        job=job,
+        payload=payload,
+        final_path=final_path,
+    )
 
     assert result.status == "sent"
     assert result.telegram_message_id == 7

@@ -10,8 +10,8 @@ This file is injected into the Script Agent prompt for every job.
 
 - Output strict JSON only.
 - 只输出严格 JSON。
-- Keep total duration between 15 and 45 seconds for MVP.
-- MVP 总时长控制在 15 到 45 秒。
+- Keep total duration between 15 and 60 seconds for MVP.
+- MVP 总时长控制在 15 到 60 秒。
 - Include narrative arc, visual style, color tone, music mood, BPM, camera language, characters in use, total duration, and scene list.
 - 必须包含叙事弧线、视觉风格、色调、音乐情绪、BPM、镜头语言、使用角色、总时长和场景列表。
 - Make each scene visually concrete enough for video generation.
@@ -24,6 +24,10 @@ This file is injected into the Script Agent prompt for every job.
 - 阅读 `VISUAL.md` 了解如何写 `visual_style` 和 `color_tone`。
 - Read `MUSIC_LIBRARY.md` when choosing `music_mood` and `music_bpm` tags.
 - 选择 `music_mood` 和 `music_bpm` 时阅读 `MUSIC_LIBRARY.md`。
+- **Scene-first:** define `scene_list` before any shot thinking; lock scene purpose, emotion arc, and dialogue intent per scene.
+- **场景优先：** 先定义 `scene_list`，再考虑镜头；每个场景锁定目的、情绪弧线、台词意图。
+- If the gateway sends `user_script_text`, normalize it into this contract without changing story meaning.
+- 若网关传入 `user_script_text`，在不改变故事含义的前提下规范化为本契约。
 - Dialogue is for subtitles and TTS (`AUDIO.md`), not for video-model speech.
 - 台词用于字幕和 TTS（见 `AUDIO.md`），不要依赖视频模型自带说话声。
 
@@ -82,6 +86,8 @@ Each item in `scene_list` must include:
 - `emotional_beat`：一句话说明观众在本场景应感受到的情绪。
 - `director_notes`: staging, pacing, and visual priorities for the director.
 - `director_notes`：给导演的调度、节奏、画面优先级说明。
+- Recommended scene-first fields: `scene_order`, `scene_purpose`, `visual_style`, `color_palette`, `emotion_start`, `emotion_end`, `dialogue_intent`, `camera_intent`, `transition_to_next_scene`.
+- 建议的场景优先字段：`scene_order`、`scene_purpose`、`visual_style`、`color_palette`、`emotion_start`、`emotion_end`、`dialogue_intent`、`camera_intent`、`transition_to_next_scene`。
 
 Example:
 

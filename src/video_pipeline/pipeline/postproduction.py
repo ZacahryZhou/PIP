@@ -8,7 +8,7 @@ from video_pipeline.config import Settings
 from video_pipeline.media.ffmpeg import concat_videos, mux_video_with_audio
 from video_pipeline.pipeline.audio_post import run_audio_postproduction
 from video_pipeline.pipeline.dialogue import collect_dialogue_lines
-from video_pipeline.pipeline.quality_control import validated_clip_path
+from video_pipeline.pipeline.paths import validated_clip_path
 from video_pipeline.pipeline.subtitles import burn_subtitles_into_video, write_srt
 from video_pipeline.pipeline.timeline import build_timeline, save_timeline
 from video_pipeline.schemas import ScriptPlan, ShotsDocument
@@ -36,7 +36,7 @@ def run_postproduction(
     concat_videos(inputs, assembled)
 
     dialogue_lines = collect_dialogue_lines(script, shots, timeline)
-    language = settings.fal_tts_language or settings.pip_default_language
+    language = settings.pip_default_language
 
     video_for_mux = assembled
     if dialogue_lines:

@@ -1,9 +1,9 @@
-"""Tests for deterministic routing rules."""
+"""Tests for V2 routing — Kling first-last-frame only."""
 
 import json
 from pathlib import Path
 
-from video_pipeline.agents.routing_agent import build_routing_plan, route_shot
+from video_pipeline.agents.routing_agent import build_routing_plan, route_shot_v2
 from video_pipeline.schemas import ShotsDocument
 
 
@@ -12,31 +12,20 @@ def load_shots() -> ShotsDocument:
     return ShotsDocument.model_validate(json.loads(path.read_text(encoding="utf-8")))
 
 
-def test_route_shot_high_motion_characters() -> None:
-    shots = load_shots()
-    preferred, fallback, reason = route_shot(shots.shots[0])
-    assert preferred == "seedance"
-    assert fallback == "kling"
-    assert "high" in reason
-
-
-def test_route_shot_realistic_medium_motion() -> None:
-    shots = load_shots()
-    preferred, fallback, reason = route_shot(shots.shots[3])
+def test_route_shot_v2_is_kling_first_last() -> None:
+    preferred, fallback, reason = route_shot_v2()
     assert preferred == "kling"
-    assert fallback == "wan_t2v"
-    assert reason == "scene_type=realistic"
+    assert fallback == "kling"
+    assert "first-last" in reason.lower()
 
 
-def test_build_routing_plan_within_budget() -> None:
+def test_build_routing_plan_all_first_last_frame() -> None:
     shots = load_shots()
-    plan = build_routing_plan(shots, max_job_cost_usd=5.0)
+    plan = build_routing_plan(shots, max_job_cost_usd=50.0)
     assert len(plan.routes) == len(shots.shots)
+    assert all(route.preferred_model == "kling" for route in plan.routes)
+    assert all(route.generation_mode == "first_last_frame" for route in plan.routes)
     assert plan.should_continue is True
-    assert plan.budget_message is None
-    assert plan.total_estimated_cost == round(
-        sum(route.estimated_cost_per_shot for route in plan.routes), 4
-    )
 
 
 def test_build_routing_plan_over_budget() -> None:
@@ -44,12 +33,3 @@ def test_build_routing_plan_over_budget() -> None:
     plan = build_routing_plan(shots, max_job_cost_usd=0.5)
     assert plan.should_continue is False
     assert plan.budget_message is not None
-
-
-def test_routing_plan_includes_generation_mode() -> None:
-    shots = load_shots()
-    plan = build_routing_plan(shots, max_job_cost_usd=5.0)
-    i2v_routes = [route for route in plan.routes if route.generation_mode == "i2v"]
-    assert len(i2v_routes) == 3
-    assert all(route.estimated_keyframe_cost == 0.15 for route in i2v_routes)
-    assert plan.total_estimated_cost == 3.15

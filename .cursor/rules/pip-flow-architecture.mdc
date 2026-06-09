@@ -1,0 +1,74 @@
+---
+description: PIP 已确认 Multi-Agent 架构图（用户定稿）— 每次沟通必须附上，禁止擅自改结构
+alwaysApply: true
+---
+
+# PIP Multi-Agent 架构（用户定稿 · 禁止擅自改结构）
+
+**规则：**
+1. 与用户讨论 PIP 时，**必须先附上本节架构图**（与用户定稿一致），再展开细节。
+2. **不得**用 orchestrator 线性顺序（Plot→Script→Storyboard→Character）替代本图。
+3. **Intake 之后是五路并行分拣**，不是一条直线。
+
+**定稿参考图：** `assets/characters/` 同级或用户提供的 Intake 分叉图（文字+图片 → Intake → 五路）。
+
+## 架构图（定稿）
+
+```mermaid
+flowchart TB
+    U["用户：文字 + 图片"]
+
+    IA["Intake Agent<br/>分析 + 分类 + 缺口询问"]
+
+    U --> IA
+
+    IA -->|无完整剧情| P1["Plot Agent 剧情<br/>生成完整剧情"]
+    IA -->|有剧情/剧本| P2["Plot Agent 剧情<br/>review 补全"]
+
+    P1 --> SA["Script Agent<br/>MASTER JSON"]
+    P2 --> SA
+
+    SA --> SB["Storyboard<br/>按 scene_shot_hints 拆镜头"]
+
+    IA -->|人物图| CA["Character Agent 任务"]
+    IA -->|场景图| SC["Scene Agent 任务"]
+    IA -->|其它参考图| RF["Reference Agent 任务"]
+
+    CA --> API["缺图 → API 生成"]
+    SC --> API
+    RF --> API
+```
+
+## 结构说明（定稿语义）
+
+| 分支 | 触发 | Agent | 产出/职责 |
+|------|------|-------|-----------|
+| 叙事左支 | 无完整剧情 | Plot Agent | **生成完整剧情**（`full_plot`；不是占位大纲） |
+| 叙事左支 | 有剧情/剧本 | Plot Agent | review 补全 |
+| 叙事左支 | Plot 之后 | Script Agent | MASTER JSON（画面风格、场景风格、台词、镜头推进） |
+| 叙事左支 | Script 之后 | Storyboard | 按 `scene_shot_hints` 拆镜头 |
+| 资产右支 | 人物图 | Character Agent | 人物任务（用户图作锚点） |
+| 资产右支 | 场景图 | Scene Agent | 场景任务 |
+| 资产右支 | 其它参考图 | Reference Agent | 参考图任务 |
+| 资产右支 | 三类汇合 | — | **缺图 → API 生成** |
+
+**Intake 输出契约：** `intake_plan.json` — `plot_route` · `character_jobs` · `scene_jobs` · `reference_jobs` · `asset_links` · `scene_shot_hints`
+
+**缺口询问：** 信息不全 → Clarification（`generate` / `supplement` / `intake done`），仍属 Intake 环，不改变五路分叉结构。
+
+## 与代码现状（2026-06-08 审计后）
+
+| 定稿 | 代码状态 |
+|------|----------|
+| Intake 一分五路（分拣语义） | ✅ `intake_plan.json` + `_run_post_intake_branches` |
+| Reference Agent 独立 stage | ✅ `reference_assets.py` · `reference_assets_ready` |
+| Storyboard 读 `scene_shot_hints` | ⚠️ prompt + 落盘；尚无 `expected_shots` 硬性校验 |
+| 资产从 Intake 分叉 | ✅ Character / Scene / Reference 均 Intake 驱动 |
+| 执行并行 | ⚠️ 分阶段：Plot → Ref∥Script → Char∥Scene∥SB（非五路同时起跑） |
+| `direct_to_script` | ❌ schema 有，intake/plot 未实现 |
+
+**Orchestrator 入口：** `orchestrator.py` → `_run_post_intake_branches` · resume 支持 `plot_done` / `scripted` / `reference_assets_ready` / `storyboarded`
+
+**下游执行层**（Preview / Kling / TTS / 交付）见 `docs/ARCHITECTURE.md`，**不替换**上表 Multi-Agent 定稿结构。
+
+**权威文档：** `docs/ARCHITECTURE.md` · `docs/RESUME_HERE.md`

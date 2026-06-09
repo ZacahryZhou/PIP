@@ -111,6 +111,53 @@ def _from_scene_dialogue(
     return lines
 
 
+@dataclass(frozen=True)
+class DialogueTextSpec:
+    line_id: str
+    speaker: str
+    text: str
+    source: str
+    estimated_duration_sec: float
+
+
+def collect_dialogue_text_specs(
+    script: ScriptPlan,
+    shots: ShotsDocument,
+) -> list[DialogueTextSpec]:
+    """Collect dialogue text and stable line IDs before timeline exists (for early TTS)."""
+    specs: list[DialogueTextSpec] = []
+
+    shot_has_dialogue = any(shot.dialogue for shot in shots.shots)
+    if shot_has_dialogue:
+        for shot in sorted(shots.shots, key=lambda item: item.shot_id):
+            for index, line in enumerate(shot.dialogue):
+                duration = max(0.2, line.end_sec - line.start_sec)
+                specs.append(
+                    DialogueTextSpec(
+                        line_id=f"{shot.shot_id}_{index:02d}",
+                        speaker=line.speaker,
+                        text=line.text,
+                        source=f"shot:{shot.shot_id}",
+                        estimated_duration_sec=duration,
+                    )
+                )
+        return specs
+
+    for scene in script.scene_list:
+        for index, line in enumerate(scene.dialogue):
+            duration = max(0.2, line.end_sec - line.start_sec)
+            specs.append(
+                DialogueTextSpec(
+                    line_id=f"{scene.scene_id}_{index:02d}",
+                    speaker=line.speaker,
+                    text=line.text,
+                    source=f"scene:{scene.scene_id}",
+                    estimated_duration_sec=duration,
+                )
+            )
+    return specs
+
+
 def collect_dialogue_lines(
     script: ScriptPlan,
     shots: ShotsDocument,

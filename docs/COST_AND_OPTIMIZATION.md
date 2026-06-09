@@ -356,7 +356,7 @@ i2v 单镜（kling 4s）≈ $0.32 + $0.15 keyframe ≈ $0.47  （约贵 47%）
 
 | 主题 | 文件 |
 |------|------|
-| 开发步骤 | `docs/PIP_DEVELOPMENT_FLOW.md`（Step 18 ✅ 画面，18b 音频，19 Telegram） |
+| 开发步骤 | `docs/ARCHITECTURE.md` · `docs/RESUME_HERE.md` |
 | 路由与估价 | `src/video_pipeline/agents/routing_agent.py`、`rules/ROUTING.md` |
 | fal endpoint | `.env.example`、`rules/PROVIDERS.md` |
 | 音频策略 | `rules/AUDIO.md`、`rules/MUSIC_LIBRARY.md` |

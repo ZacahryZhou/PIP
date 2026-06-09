@@ -15,6 +15,10 @@ class RouteDecision(BaseModel):
     estimated_keyframe_cost: float = Field(ge=0, default=0)
     estimated_cost_per_shot: float = Field(ge=0)
     estimated_duration_sec: float = Field(gt=0)
+    supports_t2v: bool = True
+    supports_i2v: bool = True
+    supports_first_last_frame: bool = False
+    supports_audio_generation: bool = False
 
 
 class RoutingPlan(BaseModel):

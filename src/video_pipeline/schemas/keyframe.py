@@ -1,4 +1,4 @@
-"""Keyframe generation report — one still image per i2v shot."""
+"""Keyframe generation report — start/end stills per shot."""
 
 from typing import Literal
 
@@ -13,7 +13,12 @@ class KeyframeResult(BaseModel):
     shot_id: str = Field(pattern=r"^shot_\d{3}$")
     generation_mode: GenerationMode
     status: KeyframeStatus
+    start_frame_path: str | None = None
+    end_frame_path: str | None = None
     keyframe_path: str | None = None
+    start_prompt: str | None = None
+    end_prompt: str | None = None
+    reused_preview_as_start: bool = False
     prompt: str | None = None
     error_message: str | None = None
     provider_request_id: str | None = None

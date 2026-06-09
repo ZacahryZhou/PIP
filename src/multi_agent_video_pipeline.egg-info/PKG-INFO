@@ -5,6 +5,7 @@ Summary: OpenClaw-driven multi-agent text-to-video pipeline MVP
 Requires-Python: >=3.11
 Requires-Dist: aiohttp
 Requires-Dist: anthropic
+Requires-Dist: certifi
 Requires-Dist: fal-client
 Requires-Dist: opencv-python
 Requires-Dist: pydantic
@@ -12,6 +13,5 @@ Requires-Dist: pydantic-settings
 Requires-Dist: structlog
 Requires-Dist: tenacity
 Provides-Extra: dev
-Requires-Dist: aioresponses; extra == "dev"
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: pytest-asyncio; extra == "dev"

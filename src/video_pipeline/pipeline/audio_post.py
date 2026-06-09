@@ -3,20 +3,24 @@
 from __future__ import annotations
 
 import json
+import shutil
 from dataclasses import asdict
 from pathlib import Path
 
 from video_pipeline.config import Settings
 from video_pipeline.media.ffmpeg import (
     build_vo_track,
-    convert_audio_to_wav,
     mix_bgm_and_vo,
     trim_or_loop_audio,
 )
 from video_pipeline.pipeline.dialogue import TimedDialogueLine
-from video_pipeline.pipeline.music_library import select_library_track
-from video_pipeline.providers.fal_audio import generate_fal_bgm, generate_fal_tts
-from video_pipeline.providers.mock_audio import generate_mock_bgm, generate_mock_tts_segment
+from video_pipeline.pipeline.bgm_prep import (
+    generate_bgm_track_early,
+    load_bgm_prep_report,
+    prepared_bgm_track_path,
+)
+from video_pipeline.pipeline.tts import load_tts_manifest, vo_segment_path
+from video_pipeline.providers.tts.base import TTSRequest, resolve_tts_provider
 from video_pipeline.schemas import ScriptPlan
 from video_pipeline.storage import JobPaths
 
@@ -35,12 +39,18 @@ def _generate_tts_segment(
     duration_sec: float,
     mock: bool,
 ) -> Path:
-    if mock:
-        return generate_mock_tts_segment(output_path, duration_sec=duration_sec)
-
-    raw_path = output_path.with_suffix(output_path.suffix + ".raw")
-    generate_fal_tts(raw_path, settings=settings, text=text)
-    return convert_audio_to_wav(raw_path, output_path)
+    provider = resolve_tts_provider(settings=settings, mock=mock)
+    voice = settings.elevenlabs_voice_id
+    language = settings.pip_default_language
+    request = TTSRequest(
+        text=text,
+        voice=voice,
+        language=language,
+        output_path=output_path,
+        estimated_duration_sec=duration_sec,
+    )
+    provider.synthesize(request)
+    return output_path
 
 
 def _generate_bgm_track(
@@ -52,45 +62,34 @@ def _generate_bgm_track(
     has_dialogue: bool,
     mock: bool,
 ) -> tuple[Path, dict[str, object]]:
-    audio_dir = _audio_dir(job)
-    bgm_wav = audio_dir / "bgm_track.wav"
-    report: dict[str, object] = {
-        "mode": settings.pip_bgm_mode,
-        "instrumental": has_dialogue,
-        "music_mood": script.music_mood,
-        "music_bpm": script.music_bpm,
-    }
+    prepared = prepared_bgm_track_path(job)
+    if prepared.is_file():
+        trimmed = _audio_dir(job) / "bgm_track_trimmed.wav"
+        trim_or_loop_audio(prepared, trimmed, duration_sec=duration_sec)
+        report: dict[str, object] = {
+            "mode": settings.pip_bgm_mode,
+            "instrumental": has_dialogue,
+            "music_mood": script.music_mood,
+            "music_bpm": script.music_bpm,
+            "source": "prepared",
+            "prepared_path": str(prepared.relative_to(job.root)),
+        }
+        prep = load_bgm_prep_report(job)
+        if prep is not None and prep.source:
+            report["source"] = prep.source
+        return trimmed, report
 
-    if mock:
-        generate_mock_bgm(bgm_wav, duration_sec=duration_sec, bpm=script.music_bpm)
-        report["source"] = "mock"
-        return bgm_wav, report
-
-    if settings.pip_bgm_mode == "library":
-        library_path = select_library_track(
-            Path(settings.pip_music_dir),
-            music_mood=script.music_mood,
-            music_bpm=script.music_bpm,
-        )
-        if library_path is not None:
-            trimmed = audio_dir / "bgm_track_trimmed.wav"
-            trim_or_loop_audio(library_path, trimmed, duration_sec=duration_sec)
-            report["source"] = str(library_path)
-            return trimmed, report
-
-    raw_bgm = audio_dir / "bgm_track.mp3"
-    generate_fal_bgm(
-        raw_bgm,
+    output_path = _audio_dir(job) / "bgm_track_trimmed.wav"
+    track_path, report = generate_bgm_track_early(
+        job,
+        script,
         settings=settings,
-        music_mood=script.music_mood,
-        music_bpm=script.music_bpm,
-        instrumental=has_dialogue,
+        duration_sec=duration_sec,
+        has_dialogue=has_dialogue,
+        mock=mock,
+        output_path=output_path,
     )
-    convert_audio_to_wav(raw_bgm, bgm_wav)
-    trimmed = audio_dir / "bgm_track_trimmed.wav"
-    trim_or_loop_audio(bgm_wav, trimmed, duration_sec=duration_sec)
-    report["source"] = settings.fal_bgm_model
-    return trimmed, report
+    return track_path, report
 
 
 def build_vo_manifest(
@@ -100,6 +99,65 @@ def build_vo_manifest(
     return {
         "lines": [asdict(line) for line in lines],
         "segments": segments,
+    }
+
+
+def _resolve_tts_segment(
+    job: JobPaths,
+    line: TimedDialogueLine,
+    *,
+    settings: Settings,
+    mock: bool,
+    tts_by_line: dict[str, str],
+) -> tuple[Path | None, dict[str, object]]:
+    segment_path = vo_segment_path(job, line.line_id)
+    duration = max(0.2, line.end_sec - line.start_sec)
+
+    if line.line_id in tts_by_line:
+        existing = job.root / tts_by_line[line.line_id]
+        if existing.is_file():
+            return existing, {
+                "line_id": line.line_id,
+                "path": str(existing.relative_to(job.root)),
+                "status": "ok",
+                "start_sec": line.start_sec,
+                "end_sec": line.end_sec,
+                "source": "tts_manifest",
+            }
+
+    try:
+        _generate_tts_segment(
+            segment_path,
+            settings=settings,
+            text=line.text,
+            duration_sec=duration,
+            mock=mock,
+        )
+        status = "ok"
+    except Exception:  # noqa: BLE001 — retry once per AUDIO.md
+        try:
+            _generate_tts_segment(
+                segment_path,
+                settings=settings,
+                text=line.text,
+                duration_sec=duration,
+                mock=mock,
+            )
+            status = "ok"
+        except Exception as retry_exc:  # noqa: BLE001
+            return None, {
+                "line_id": line.line_id,
+                "path": None,
+                "status": "failed",
+                "error": str(retry_exc),
+            }
+
+    return segment_path, {
+        "line_id": line.line_id,
+        "path": str(segment_path.relative_to(job.root)),
+        "status": status,
+        "start_sec": line.start_sec,
+        "end_sec": line.end_sec,
     }
 
 
@@ -117,50 +175,24 @@ def run_audio_postproduction(
     segment_records: list[dict[str, object]] = []
     vo_segments: list[tuple[Path, float]] = []
 
-    for line in dialogue_lines:
-        segment_path = audio_dir / f"vo_{line.line_id}.wav"
-        duration = max(0.2, line.end_sec - line.start_sec)
-        try:
-            _generate_tts_segment(
-                segment_path,
-                settings=settings,
-                text=line.text,
-                duration_sec=duration,
-                mock=mock,
-            )
-            status = "ok"
-        except Exception:  # noqa: BLE001 — retry once per AUDIO.md
-            try:
-                _generate_tts_segment(
-                    segment_path,
-                    settings=settings,
-                    text=line.text,
-                    duration_sec=duration,
-                    mock=mock,
-                )
-                status = "ok"
-            except Exception as retry_exc:  # noqa: BLE001
-                status = "failed"
-                segment_records.append(
-                    {
-                        "line_id": line.line_id,
-                        "path": None,
-                        "status": status,
-                        "error": str(retry_exc),
-                    }
-                )
-                continue
+    tts_manifest = load_tts_manifest(job)
+    tts_by_line: dict[str, str] = {}
+    if tts_manifest is not None:
+        for entry in tts_manifest.segments:
+            if entry.status == "ok" and entry.wav_path:
+                tts_by_line[entry.line_id] = entry.wav_path
 
-        vo_segments.append((segment_path, line.start_sec))
-        segment_records.append(
-            {
-                "line_id": line.line_id,
-                "path": str(segment_path.relative_to(job.root)),
-                "status": status,
-                "start_sec": line.start_sec,
-                "end_sec": line.end_sec,
-            }
+    for line in dialogue_lines:
+        segment_path, record = _resolve_tts_segment(
+            job,
+            line,
+            settings=settings,
+            mock=mock,
+            tts_by_line=tts_by_line,
         )
+        segment_records.append(record)
+        if segment_path is not None and record.get("status") == "ok":
+            vo_segments.append((segment_path, line.start_sec))
 
     vo_manifest_path = audio_dir / "vo_manifest.json"
     vo_manifest_path.write_text(
@@ -175,6 +207,26 @@ def run_audio_postproduction(
     if vo_segments:
         vo_track_path = audio_dir / "vo_track.wav"
         build_vo_track(vo_segments, vo_track_path, total_duration_sec=duration_sec)
+
+    bgm_mode = (settings.pip_bgm_mode or "off").strip().lower()
+    if bgm_mode == "off":
+        mixed_path = audio_dir / "mixed_audio.wav"
+        if vo_track_path is not None:
+            shutil.copy2(vo_track_path, mixed_path)
+        else:
+            from video_pipeline.providers.mock_audio import generate_mock_tts_segment
+
+            generate_mock_tts_segment(mixed_path, duration_sec=duration_sec)
+        mix_report = {
+            "bgm_mode": "off",
+            "has_dialogue": has_dialogue,
+            "vo_track": str(vo_track_path.relative_to(job.root)) if vo_track_path else None,
+            "mixed_audio": str(mixed_path.relative_to(job.root)),
+            "vo_segments": segment_records,
+        }
+        mix_report_path = audio_dir / "mix_report.json"
+        mix_report_path.write_text(json.dumps(mix_report, indent=2), encoding="utf-8")
+        return mixed_path, mix_report
 
     bgm_track_path, bgm_report = _generate_bgm_track(
         job,
@@ -205,6 +257,9 @@ def run_audio_postproduction(
         "mixed_audio": str(mixed_path.relative_to(job.root)),
         "bgm": bgm_report,
         "vo_segments": segment_records,
+        "tts_manifest": str((audio_dir / "tts_manifest.json").relative_to(job.root))
+        if (audio_dir / "tts_manifest.json").is_file()
+        else None,
     }
     mix_report_path = audio_dir / "mix_report.json"
     mix_report_path.write_text(json.dumps(mix_report, indent=2), encoding="utf-8")

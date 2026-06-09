@@ -1,4 +1,4 @@
-"""fal.ai video provider for t2v and i2v shots."""
+"""fal.ai Kling first-last-frame video provider (V2)."""
 
 from __future__ import annotations
 
@@ -24,29 +24,13 @@ class FalVideoResult:
 
 
 def select_fal_video_endpoint(route: RouteDecision, settings: Settings) -> str:
-    """Map internal routing names to configured fal endpoints."""
-    model = route.preferred_model
-    if model == "seedance":
-        endpoint = (
-            settings.fal_video_model_seedance_i2v
-            if route.generation_mode == "i2v"
-            else settings.fal_video_model_seedance
-        )
-    elif model == "kling":
-        endpoint = (
-            settings.fal_video_model_kling_i2v
-            if route.generation_mode == "i2v"
-            else settings.fal_video_model_kling
-        )
-    elif model == "wan_t2v":
-        endpoint = settings.fal_video_model_wan
-    elif model == "premium_api":
-        endpoint = settings.fal_video_model_seedance
-    else:
-        endpoint = ""
-
+    if route.generation_mode != "first_last_frame":
+        raise ValueError(f"V2 only supports first_last_frame, got {route.generation_mode}")
+    if route.preferred_model != "kling":
+        raise ValueError(f"V2 only supports kling, got {route.preferred_model}")
+    endpoint = settings.fal_video_model_kling_fl
     if not endpoint:
-        raise ValueError(f"No fal endpoint configured for {model}/{route.generation_mode}")
+        raise ValueError("FAL video endpoint not configured (fal_video_model_kling_fl)")
     return endpoint
 
 
@@ -57,9 +41,9 @@ def build_fal_video_arguments(
     shot: Shot,
     prompt: str,
     endpoint: str,
-    image_url: str | None = None,
+    start_image_url: str | None = None,
+    end_image_url: str | None = None,
 ) -> dict[str, object]:
-    """Build fal subscribe payload; Seedance gets explicit resolution, Kling Pro via endpoint."""
     duration = max(1, math.ceil(shot.duration_sec))
     arguments: dict[str, object] = {
         "prompt": prompt,
@@ -67,12 +51,13 @@ def build_fal_video_arguments(
         "aspect_ratio": "16:9",
         "generate_audio": settings.fal_video_generate_audio,
     }
-    if "seedance" in endpoint:
-        arguments["resolution"] = settings.fal_video_resolution
-    if route.generation_mode == "i2v":
-        if not image_url:
-            raise ValueError("image_url is required for i2v fal generation")
-        arguments["image_url"] = image_url
+    if route.generation_mode == "first_last_frame":
+        if not start_image_url or not end_image_url:
+            raise ValueError("start_image_url and end_image_url are required for first-last-frame")
+        arguments["start_image_url"] = start_image_url
+        arguments["end_image_url"] = end_image_url
+        # Some fal Kling endpoints also accept image_url as alias for start.
+        arguments["image_url"] = start_image_url
     return arguments
 
 
@@ -84,15 +69,19 @@ def generate_fal_clip(
     shot: Shot,
     prompt: str,
     keyframe_path: str | None = None,
+    end_keyframe_path: str | None = None,
 ) -> FalVideoResult:
-    """Generate one video clip with fal and save it to the raw clips directory."""
+    """Generate one Kling first-last-frame clip via fal."""
     fal_client = require_fal_client(settings.fal_key)
     endpoint = select_fal_video_endpoint(route, settings)
-    image_url: str | None = None
-    if route.generation_mode == "i2v":
-        if not keyframe_path:
-            raise ValueError("keyframe_path is required for i2v fal generation")
-        image_url = fal_client.upload_file(keyframe_path)
+
+    start_url: str | None = None
+    end_url: str | None = None
+    if route.generation_mode == "first_last_frame":
+        if not keyframe_path or not end_keyframe_path:
+            raise ValueError("keyframe_path and end_keyframe_path are required")
+        start_url = fal_client.upload_file(keyframe_path)
+        end_url = fal_client.upload_file(end_keyframe_path)
 
     arguments = build_fal_video_arguments(
         settings=settings,
@@ -100,7 +89,8 @@ def generate_fal_clip(
         shot=shot,
         prompt=prompt,
         endpoint=endpoint,
-        image_url=image_url,
+        start_image_url=start_url,
+        end_image_url=end_url,
     )
 
     result = fal_client.subscribe(endpoint, arguments=arguments, with_logs=True)

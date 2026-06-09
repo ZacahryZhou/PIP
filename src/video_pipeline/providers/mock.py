@@ -85,3 +85,167 @@ def generate_mock_keyframe(
     if not cv2.imwrite(str(output_path), frame):
         raise RuntimeError(f"Failed to write keyframe image {output_path}")
     return output_path
+
+
+def generate_mock_preview(
+    output_path: Path,
+    *,
+    width: int,
+    height: int,
+    label: str = "",
+) -> Path:
+    import cv2
+    import numpy as np
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    frame = np.zeros((height, width, 3), dtype=np.uint8)
+    frame[:, :, 0] = 90
+    frame[:, :, 1] = 50
+    frame[:, :, 2] = 120
+    if label:
+        cv2.putText(
+            frame,
+            label[:32],
+            (40, height // 2 - 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.0,
+            (255, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            frame,
+            "STORYBOARD PREVIEW",
+            (40, height // 2 + 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (220, 200, 255),
+            2,
+            cv2.LINE_AA,
+        )
+    if not cv2.imwrite(str(output_path), frame):
+        raise RuntimeError(f"Failed to write preview image {output_path}")
+    return output_path
+
+
+def generate_mock_character_angle(
+    output_path: Path,
+    *,
+    width: int,
+    height: int,
+    label: str = "",
+) -> Path:
+    import cv2
+    import numpy as np
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    frame = np.zeros((height, width, 3), dtype=np.uint8)
+    frame[:, :, 0] = 120
+    frame[:, :, 1] = 80
+    frame[:, :, 2] = 60
+    if label:
+        cv2.putText(
+            frame,
+            label[:32],
+            (40, height // 2 - 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.0,
+            (255, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            frame,
+            "CHARACTER ANGLE",
+            (40, height // 2 + 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (255, 220, 180),
+            2,
+            cv2.LINE_AA,
+        )
+    if not cv2.imwrite(str(output_path), frame):
+        raise RuntimeError(f"Failed to write character angle image {output_path}")
+    return output_path
+
+
+def generate_mock_scene_angle(
+    output_path: Path,
+    *,
+    width: int,
+    height: int,
+    label: str = "",
+) -> Path:
+    import cv2
+    import numpy as np
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    frame = np.zeros((height, width, 3), dtype=np.uint8)
+    frame[:, :, 0] = 30
+    frame[:, :, 1] = 95
+    frame[:, :, 2] = 110
+    if label:
+        cv2.putText(
+            frame,
+            label[:32],
+            (40, height // 2 - 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.0,
+            (255, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            frame,
+            "SCENE ANGLE",
+            (40, height // 2 + 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (200, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
+    if not cv2.imwrite(str(output_path), frame):
+        raise RuntimeError(f"Failed to write scene angle image {output_path}")
+    return output_path
+
+
+def generate_mock_scene_master(
+    output_path: Path,
+    *,
+    width: int,
+    height: int,
+    label: str = "",
+) -> Path:
+    import cv2
+    import numpy as np
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    frame = np.zeros((height, width, 3), dtype=np.uint8)
+    frame[:, :, 0] = 40
+    frame[:, :, 1] = 110
+    frame[:, :, 2] = 70
+    if label:
+        cv2.putText(
+            frame,
+            label[:32],
+            (40, height // 2 - 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.0,
+            (255, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            frame,
+            "SCENE MASTER",
+            (40, height // 2 + 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (200, 255, 200),
+            2,
+            cv2.LINE_AA,
+        )
+    if not cv2.imwrite(str(output_path), frame):
+        raise RuntimeError(f"Failed to write scene master image {output_path}")
+    return output_path

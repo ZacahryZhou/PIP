@@ -12,7 +12,7 @@ from typing import Any
 import aiohttp
 import certifi
 
-from video_pipeline.schemas import GatewayPayload, JobState, RoutingPlan
+from video_pipeline.schemas import GatewayPayload, JobState, RoutingPlan, ShotsDocument, StoryboardPreviewDocument
 from video_pipeline.storage import JobPaths, save_job_state
 from video_pipeline.storage.artifacts import write_json
 
@@ -55,6 +55,37 @@ async def telegram_get_updates(
         return await response.json()
 
 
+async def telegram_get_file(
+    session: aiohttp.ClientSession,
+    *,
+    token: str,
+    file_id: str,
+) -> dict[str, Any]:
+    base_url = f"https://api.telegram.org/bot{token}"
+    async with session.get(f"{base_url}/getFile", params={"file_id": file_id}) as response:
+        payload = await response.json()
+        if not payload.get("ok"):
+            raise RuntimeError(f"Telegram getFile failed: {payload!r}")
+        return payload["result"]
+
+
+async def download_telegram_file(
+    session: aiohttp.ClientSession,
+    *,
+    token: str,
+    file_path: str,
+    dest: Path,
+) -> Path:
+    url = f"https://api.telegram.org/file/bot{token}/{file_path}"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    async with session.get(url) as response:
+        if response.status != 200:
+            raise RuntimeError(f"Telegram file download failed: HTTP {response.status}")
+        data = await response.read()
+    dest.write_bytes(data)
+    return dest
+
+
 @dataclass(frozen=True)
 class DeliveryResult:
     channel: str
@@ -92,6 +123,184 @@ async def send_telegram_message(
         if not payload.get("ok"):
             raise RuntimeError(f"Telegram sendMessage failed: {payload!r}")
         return int(payload["result"]["message_id"])
+
+
+def build_preview_callback(action: str, job_id: str, preview_version: int) -> str:
+    return f"pip:{action}:{job_id}:{preview_version}"
+
+
+def parse_preview_callback(data: str) -> tuple[str, str, int] | None:
+    parts = data.split(":")
+    if len(parts) != 4 or parts[0] != "pip":
+        return None
+    action, job_id, version_text = parts[1], parts[2], parts[3]
+    if action not in {"approve", "cancel", "revise"}:
+        return None
+    try:
+        preview_version = int(version_text)
+    except ValueError:
+        return None
+    return action, job_id, preview_version
+
+
+async def send_telegram_photo(
+    session: aiohttp.ClientSession,
+    *,
+    token: str,
+    chat_id: str,
+    image_path: Path,
+    caption: str | None = None,
+) -> int:
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Preview image not found: {image_path}")
+
+    url = f"https://api.telegram.org/bot{token}/sendPhoto"
+    form = aiohttp.FormData()
+    form.add_field("chat_id", chat_id)
+    if caption:
+        form.add_field("caption", caption)
+    form.add_field(
+        "photo",
+        image_path.read_bytes(),
+        filename=image_path.name,
+        content_type="image/png",
+    )
+
+    async with session.post(url, data=form) as response:
+        payload = await response.json()
+        if not payload.get("ok"):
+            raise RuntimeError(f"Telegram sendPhoto failed: {payload!r}")
+        return int(payload["result"]["message_id"])
+
+
+async def send_telegram_message_with_keyboard(
+    session: aiohttp.ClientSession,
+    *,
+    token: str,
+    chat_id: str,
+    text: str,
+    reply_markup: dict[str, Any],
+) -> int:
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    async with session.post(
+        url,
+        json={"chat_id": chat_id, "text": text, "reply_markup": reply_markup},
+    ) as response:
+        payload = await response.json()
+        if not payload.get("ok"):
+            raise RuntimeError(f"Telegram sendMessage failed: {payload!r}")
+        return int(payload["result"]["message_id"])
+
+
+def build_preview_caption(
+    *,
+    shot_id: str,
+    scene_id: str,
+    subject: str,
+    duration_sec: float,
+    dialogue_text: str | None = None,
+) -> str:
+    lines = [
+        f"{shot_id} · {scene_id}",
+        subject,
+        f"Duration: {duration_sec:g}s",
+    ]
+    if dialogue_text:
+        lines.append(f'Dialogue: "{dialogue_text}"')
+    return "\n".join(lines)
+
+
+async def deliver_storyboard_previews(
+    session: aiohttp.ClientSession,
+    *,
+    token: str,
+    job: JobPaths,
+    payload: GatewayPayload,
+    preview: StoryboardPreviewDocument,
+    shots: ShotsDocument,
+) -> None:
+    chat_id = payload.user_id
+    shot_by_id = {shot.shot_id: shot for shot in shots.shots}
+
+    await send_telegram_message(
+        session,
+        token=token,
+        chat_id=chat_id,
+        text=(
+            f"Storyboard preview for {job.job_id} (v{preview.preview_version}). "
+            "Review each shot below, then choose an action."
+        ),
+    )
+
+    for item in preview.items:
+        if item.status != "ok":
+            continue
+        shot = shot_by_id[item.shot_id]
+        dialogue_text = shot.dialogue[0].text if shot.dialogue else None
+        caption = build_preview_caption(
+            shot_id=shot.shot_id,
+            scene_id=shot.scene_id,
+            subject=shot.subject,
+            duration_sec=shot.duration_sec,
+            dialogue_text=dialogue_text,
+        )
+        image_path = job.root / item.preview_image_path
+        await send_telegram_photo(
+            session,
+            token=token,
+            chat_id=chat_id,
+            image_path=image_path,
+            caption=caption,
+        )
+
+    keyboard = {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "Approve / 通过",
+                    "callback_data": build_preview_callback(
+                        "approve", job.job_id, preview.preview_version
+                    ),
+                },
+                {
+                    "text": "Revise / 修改",
+                    "callback_data": build_preview_callback(
+                        "revise", job.job_id, preview.preview_version
+                    ),
+                },
+                {
+                    "text": "Cancel / 取消",
+                    "callback_data": build_preview_callback(
+                        "cancel", job.job_id, preview.preview_version
+                    ),
+                },
+            ]
+        ]
+    }
+    await send_telegram_message_with_keyboard(
+        session,
+        token=token,
+        chat_id=chat_id,
+        text="Approve this storyboard to start video generation?",
+        reply_markup=keyboard,
+    )
+
+
+async def answer_telegram_callback(
+    session: aiohttp.ClientSession,
+    *,
+    token: str,
+    callback_query_id: str,
+    text: str | None = None,
+) -> None:
+    url = f"https://api.telegram.org/bot{token}/answerCallbackQuery"
+    body: dict[str, str] = {"callback_query_id": callback_query_id}
+    if text:
+        body["text"] = text
+    async with session.post(url, json=body) as response:
+        payload = await response.json()
+        if not payload.get("ok"):
+            raise RuntimeError(f"Telegram answerCallbackQuery failed: {payload!r}")
 
 
 async def send_telegram_video(

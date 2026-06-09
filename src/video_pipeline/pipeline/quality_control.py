@@ -12,14 +12,12 @@ from video_pipeline.media.ffmpeg import (
     parse_resolution,
     probe_video,
 )
+from video_pipeline.pipeline.paths import validated_clip_path
+from video_pipeline.pipeline.stage_report import StageTimer, write_stage_report
 from video_pipeline.schemas import GenerationReport, QCCheckResult, QCReport, ShotsDocument
-from video_pipeline.storage import JobPaths, write_json
+from video_pipeline.storage import JobPaths
 
 DURATION_TOLERANCE_SEC = 0.75
-
-
-def validated_clip_path(job: JobPaths, shot_id: str) -> Path:
-    return job.clips_validated_dir / f"{shot_id}.mp4"
 
 
 def run_quality_control(
@@ -29,14 +27,35 @@ def run_quality_control(
     *,
     settings: Settings,
 ) -> QCReport:
+    timer = StageTimer(
+        job_id=job.job_id,
+        stage="quality_control",
+        input_artifacts=[str((job.reports_dir / "generation_report.json").relative_to(job.root))],
+    )
     target_width, target_height = parse_resolution(settings.target_resolution)
     gen_by_id = {item.shot_id: item for item in generation.results}
 
     checks: list[QCCheckResult] = []
     passed: list[str] = []
     failed: list[str] = []
+    resumed_count = 0
 
     for shot in shots.shots:
+        existing_validated = validated_clip_path(job, shot.shot_id)
+        if existing_validated.is_file():
+            checks.append(
+                QCCheckResult(
+                    shot_id=shot.shot_id,
+                    check="file_integrity",
+                    status="passed",
+                    actual=str(existing_validated.relative_to(job.root)),
+                    message="resumed existing validated clip",
+                )
+            )
+            passed.append(shot.shot_id)
+            resumed_count += 1
+            continue
+
         shot_failed = False
         gen = gen_by_id.get(shot.shot_id)
         clip_path: Path | None = None
@@ -188,5 +207,18 @@ def run_quality_control(
         failed_shot_ids=failed,
         checks=checks,
     )
-    write_json(job.reports_dir / "qc_report.json", report)
+    status = "failed" if failed else "ok"
+    if resumed_count == len(shots.shots) and status == "ok":
+        status = "skipped"
+    envelope = timer.envelope(
+        status=status,  # type: ignore[arg-type]
+        output_artifacts=[str((job.reports_dir / "qc_report.json").relative_to(job.root))],
+        resumed=resumed_count > 0,
+    )
+    write_stage_report(
+        job,
+        job.reports_dir / "qc_report.json",
+        envelope,
+        report.model_dump(),
+    )
     return report

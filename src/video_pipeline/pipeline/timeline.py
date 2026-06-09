@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from video_pipeline.media.ffmpeg import probe_video
-from video_pipeline.pipeline.quality_control import validated_clip_path
+from video_pipeline.pipeline.paths import validated_clip_path
 from video_pipeline.schemas import ShotsDocument
 from video_pipeline.storage import JobPaths
 

@@ -2,6 +2,10 @@
 
 ## Split Rules / 拆分规则
 
+**Scene-first workflow:** iterate `script.scene_list` in `scene_order`; only split shots inside each scene.
+
+**场景优先流程：** 按 `scene_order` 遍历 `script.scene_list`；只在每个场景内部拆分镜头。
+
 Split a scene into a new shot when any of these conditions are true:
 
 当满足以下任一条件时，拆成新镜头：
@@ -47,6 +51,11 @@ Each shot must include:
 - `generation_mode_reason`：一句英文说明为何选该模式
 - `preferred_model`
 - `fallback_model`
+- `scene_order`, `shot_order_in_scene`: ordering inside script scenes.
+- `shot_continuity_from_previous`: required for every shot after the first in a scene.
+- `camera_progression`, `emotion_transition`, `preview_desc`, `keyframe_start_desc`, `keyframe_end_desc`.
+- `visual_style`, `color_palette`: inherit from parent scene in `script.json`.
+- `scene_reference_id`, `scene_reference_image_path`, `character_reference_image_paths` when gateway assets exist.
 
 ## Generation Mode / 生成模式（Storyboard Agent 判断）
 

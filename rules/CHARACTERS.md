@@ -110,10 +110,10 @@ Optional: add `assets/characters/hero/reference.png` if you have a custom hero i
 <!-- Duplicate the template block for each character. Example slot: rename _your_character folder and fill below. -->
 
 ```text
-id: Coffeefee
-name:Coffeefee
-aliases: Coffeefee
-reference_image: assets/characters/Coffeefee/Coffeefee2
+id: coffeefee
+name: Coffeefee
+aliases: Coffeefee, COFFEEFEE, 咖啡菲
+reference_image: assets/characters/coffeefee/reference.png
 age_range: 15 - 20
 visual_identity: stylized 3D anthropomorphic black cat, oversized round head, small pear-shaped body, short stubby limbs, matte black fur with fine texture, huge round cream-white eyes with tiny black pupils, thin black eyebrows slanted down in a worried look, small folded Scottish-Fold-style ears, tiny dark grey button nose, small downturned mouth, three long whiskers on each cheek, bipedal standing pose
 clothing: none, no outfit, natural black fur only, no accessories

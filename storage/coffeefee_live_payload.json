@@ -1,0 +1,15 @@
+{
+  "raw_prompt": "原创动漫短剧 COFFEEFEE: THE ORCHESTRATOR，30秒竖屏情感治愈短剧，3D角色置于写实城市与咖啡店环境",
+  "channel": "telegram",
+  "user_id": "coffeefee_real_test",
+  "timestamp": "2026-06-08T12:00:00-07:00",
+  "has_script": true,
+  "user_script_text": "《COFFEEFEE: THE ORCHESTRATOR》— 30秒测试脚本\n\nFADE IN:\n\nEXT. 城市后巷 - 夜                                                     0:00-0:05\n\n(镜头：低角度，缓慢推近)\n冷色调霓虹映在湿地上。COFFEEFEE——深炭黑苏格兰折耳小猫，圆滚身体、极短四肢——缩在纸箱旁，巨大奶油白圆眼望向空荡街道。\n3D动漫角色，100%写实城市摄影环境，真实光源与阴影。\n\n风声 HOWLING WIND\n远处车流 DISTANT TRAFFIC\n\n                    COFFEEFEE\n          （无声，鼻尖微动，眼神孤独）\n\nCUT TO:\n\nEXT. 后巷尽头 - 夜                                                     0:05-0:10\n\n(镜头：主观POV，缓慢推近)\n门缝溢出琥珀暖光——DARIO 咖啡店。冷蓝街道与暖黄店面形成对比。\n\n店内隐约杯碟声 SOFT CLINKING\n\n                    COFFEEFEE\n          （站起，小爪子抓紧地面）\n\nCUT TO:\n\nINT. DARIO 咖啡店 - 连续                                               0:10-0:15\n\n(镜头：从门缝进入室内，跟拍)\nCOFFEEFEE 迈短腿跨入。写实木质吧台、琥珀吊灯，角色受真实暖光照射。\n\n门铃 CHIME\n\nCUT TO:\n\nINT. DARIO 咖啡店 - 柜台区                                             0:15-0:20\n\n(镜头：中景横移)\nDARIO——戴棕色贝雷帽——擦杯子，抬头。两人无声对视，COFFEEFEE 圆眼里映着暖光。\n\n                     DARIO\n          外面很冷吧？\n\nCUT TO:\n\nINT. DARIO 咖啡店 - 柜台                                               0:20-0:25\n\n(镜头：特写 Coffeefee）\n冷意褪去，被看见。\n\n                    COFFEEFEE\n               …我可以等吗？\n\nCUT TO:\n\nINT. DARIO 咖啡店 - 连续                                               0:25-0:30\n\n(镜头：宽构图，温和俯视)\nDARIO 无声推来一小碟温牛奶。COFFEEFEE 低头，孤独化为被接纳。\n\n温暖低频音乐渐入 WARM LOW MUSIC\n杯碟轻响 CUP SAUCER CLINK\n\n                     DARIO\n          慢慢喝。\n\nFADE OUT.\n",
+  "character_ids": [
+    "coffeefee"
+  ],
+  "style_preset": "3d_anime_in_photoreal_env",
+  "style_notes": "3D stylized Scottish Fold kitten in 100% photoreal urban night and warm coffee shop. Cold blue to warm amber. Emotional arc: lonely to seen.",
+  "target_duration_sec": 30,
+  "language": "zh"
+}

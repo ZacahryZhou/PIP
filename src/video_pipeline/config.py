@@ -17,10 +17,11 @@ class Settings(BaseSettings):
     fal_video_resolution: str = "1080p"
     max_shot_duration_sec: int = 8
     min_video_duration_sec: int = 15
-    max_video_duration_sec: int = 45
+    max_video_duration_sec: int = 60
     max_concurrent_shots: int = 4
-    max_job_cost_usd: float = 5.0
+    max_job_cost_usd: float = 10.0
     max_generation_retries: int = 2
+    max_storyboard_revisions: int = 2
     video_pipeline_mock: bool = False
 
     deepseek_api_key: str = ""
@@ -29,21 +30,21 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
 
     pip_default_language: str = "en"
+    pip_tts_provider: str = "fal"
 
     fal_key: str = ""
     fal_image_model: str = "fal-ai/nano-banana-pro"
-    fal_video_model_seedance: str = "fal-ai/bytedance/seedance/v1.5/pro/text-to-video"
-    fal_video_model_seedance_i2v: str = "fal-ai/bytedance/seedance/v1.5/pro/image-to-video"
-    fal_video_model_kling: str = "fal-ai/kling-video/v3/pro/text-to-video"
-    fal_video_model_kling_i2v: str = "fal-ai/kling-video/v3/pro/image-to-video"
-    fal_video_model_wan: str = ""
+    fal_video_model_kling_fl: str = "fal-ai/kling-video/o1/standard/image-to-video"
     fal_video_generate_audio: bool = False
-    fal_tts_model: str = "xai/tts/v1"
-    fal_tts_voice: str = "rex"
+    fal_tts_model: str = "fal-ai/elevenlabs/tts/eleven-v3"
+    fal_tts_voice: str = "21m00Tcm4TlvDq8ikWAM"
     fal_tts_language: str = "en"
-    pip_bgm_mode: str = "fal"
-    fal_bgm_model: str = "fal-ai/minimax-music/v2.6"
+    pip_bgm_mode: str = "off"
     pip_music_dir: str = "assets/music"
+
+    elevenlabs_api_key: str = ""
+    elevenlabs_voice_id: str = "21m00Tcm4TlvDq8ikWAM"
+    elevenlabs_model_id: str = "eleven_multilingual_v2"
 
     telegram_bot_token: str = ""
 
